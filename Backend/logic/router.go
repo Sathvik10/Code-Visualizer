@@ -1,0 +1,169 @@
+package logic
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Router struct {
+	packageHandler PackageHandler
+}
+
+func NewRouter() Router {
+	return Router{
+		packageHandler: NewPackageHandler(),
+	}
+}
+
+// Handler functions
+func (r Router) helloHandler(c *gin.Context) {
+	// Get the input string from the request
+	input := c.Param("input")
+
+	// Return the response
+	c.JSON(http.StatusOK, gin.H{
+		"message": "hello",
+		"input":   input,
+	})
+}
+
+func (r Router) addPath(c *gin.Context) {
+	// Get the name path parameter
+	name := c.Param("name")
+
+	// Get the file path query parameter
+	filePath := c.Query("filepath")
+
+	// Check if the file path is provided
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing filepath query parameter",
+		})
+		return
+	}
+
+	resp, err := r.packageHandler.addPackage(filePath, name)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"name":     name,
+		"filepath": filePath,
+		"response": resp,
+	})
+	return
+}
+
+func (r Router) getTreeStructure(c *gin.Context) {
+
+	name := c.Param("package")
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing path package parameter",
+		})
+		return
+	}
+	// Get the depth parameter (optional)
+	depthStr := c.Query("depth")
+	depth := -1 // -1 means unlimited depth
+	if depthStr != "" {
+		parsedDepth, err := strconv.Atoi(depthStr)
+		if err == nil && parsedDepth >= 0 {
+			depth = parsedDepth
+		}
+	}
+
+	resp, err := r.packageHandler.GetTreeStructure(name, depth)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"response": resp,
+	})
+}
+
+func (r Router) getGitStats(c *gin.Context) {
+
+	name := c.Param("package")
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing path package parameter",
+		})
+		return
+	}
+
+	resp, err := r.packageHandler.GetGitStats(name)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"response": resp,
+	})
+}
+
+func (r Router) getFunctions(c *gin.Context) {
+
+	name := c.Param("package")
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing path package parameter",
+		})
+		return
+	}
+	// Get the file path query parameter
+	filePath := c.Query("filepath")
+	// Check if the file path is provided
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing filepath query parameter",
+		})
+		return
+	}
+
+	resp, err := r.packageHandler.FindFunctions(name, filePath)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"response": resp,
+	})
+}
+
+// Router setup
+func SetupRouter() *gin.Engine {
+	// Create a default gin router with default middleware
+	router := gin.Default()
+
+	r := NewRouter()
+
+	// API group for versioning
+	v1 := router.Group("/api/v1")
+	{
+		// Hello endpoint
+		v1.GET("/hello/:input", r.helloHandler)
+
+		v1.GET("/file/:name", r.addPath)
+
+		v1.GET("/treestructure/:package", r.getTreeStructure)
+
+		v1.GET("/gitstats/:package", r.getGitStats)
+
+		v1.GET("/functions/:package", r.getFunctions)
+	}
+
+	return router
+}
