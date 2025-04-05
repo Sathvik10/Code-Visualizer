@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strconv"
 	"github.com/gin-contrib/cors"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -157,7 +156,6 @@ func SetupRouter() *gin.Engine {
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
 	}))
 
 	r := NewRouter()
