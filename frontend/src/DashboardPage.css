@@ -1,0 +1,21 @@
+.dashboard-container {
+	height: 100vh;
+	display: flex;
+  }
+  
+  .dashboard-section {
+	padding: 1rem;
+	overflow: auto;
+	border: 1px solid #ddd;
+	background-color: #f9f9f9;
+  }
+  
+  .gutter {
+	background-color: #ccc;
+	background-clip: content-box;
+  }
+  
+  .gutter.gutter-horizontal {
+	cursor: col-resize;
+  }
+  

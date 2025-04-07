@@ -67,7 +67,7 @@ function App() {
       const data = await res.json();
       if (data.response === "Success") {
         console.log(data);
-        navigate("/dashboard"); // ✅ Redirect to dashboard route
+        navigate("/dashboard"); 
       }
     } catch (error) {
       if (
