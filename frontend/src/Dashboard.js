@@ -33,7 +33,7 @@ const Dashboard = () => {
         console.error("Error fetching stats:", err);
         navigate("/");
       });
-  }, []);
+  }, [navigate]);
 
   return (
     <div>
