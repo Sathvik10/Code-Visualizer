@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ErrorMessage from "./components/ErrorMessage";
+import { useNavigate } from "react-router-dom";
 
 import "./App.css";
 
@@ -8,6 +9,7 @@ function App() {
   const [serverAvailable, setServerAvailable] = useState();
   const [errorMessage, setErrorMessage] = useState("");
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const navigate = useNavigate();
 
   const handleFolderSelect = async (event) => {
     setProjectPath(event.target.value);
@@ -65,6 +67,7 @@ function App() {
       const data = await res.json();
       if (data.response === "Success") {
         console.log(data);
+        navigate("/dashboard"); // ✅ Redirect to dashboard route
       }
     } catch (error) {
       if (
