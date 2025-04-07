@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -200,4 +201,13 @@ func extractFunctionsFromFile(filePath string) ([]string, error) {
 	})
 
 	return functions, nil
+}
+
+func GenerateRandomAlphanumericString(length int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }

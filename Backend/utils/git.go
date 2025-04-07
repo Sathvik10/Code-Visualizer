@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -225,6 +227,22 @@ func translateGitStatus(code string) string {
 	default:
 		return code
 	}
+}
+
+func CloneRepo(url, dir string) error {
+	fmt.Println("Cloning repo from URL:", url)
+	fmt.Println("Cloning to directory:", dir)
+
+	// Execute git clone command
+	cmd := exec.Command("git", "clone", url, dir)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git clone failed: %w", err)
+	}
+
+	return nil
 }
 
 // Add this to your router setup

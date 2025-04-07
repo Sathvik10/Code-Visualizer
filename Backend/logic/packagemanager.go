@@ -137,3 +137,7 @@ func (p PackageManager) GetGitStats() utils.GitStats {
 func (p PackageManager) FindFunctions(path string) ([]string, error) {
 	return utils.FindFunctions(path)
 }
+
+func (p PackageManager) CloneRepo(url, branch string) error {
+	return utils.CloneRepo(url, p.dirPath)
+}

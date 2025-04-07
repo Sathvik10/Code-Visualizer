@@ -71,3 +71,20 @@ func (p PackageHandler) FindFunctions(name, path string) ([]string, error) {
 	}
 	return p.packages[name].FindFunctions(path)
 }
+
+func (p PackageHandler) CloneRepo(repoURL string) (string, error) {
+	// Get present working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	// Create the directory for the package if it doesn't exist
+	packDir := filepath.Join("repos", utils.GenerateRandomAlphanumericString(5))
+	if _, err := os.Stat(packDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(packDir, os.ModePerm); err != nil {
+			return "", err
+		}
+	}
+	return packDir, utils.CloneRepo(repoURL, filepath.Join(cwd, packDir))
+	// return nil
+}

@@ -3,8 +3,10 @@ package logic
 import (
 	"net/http"
 	"strconv"
-	"github.com/gin-contrib/cors"
 
+	"path/filepath"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,6 +29,45 @@ func (r Router) helloHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "hello",
 		"input":   input,
+	})
+}
+
+type CloneRepoRequest struct {
+	RepoURL    string `json:"repoURL"`
+	FolderName string `json:"foldername"`
+}
+
+func (r Router) cloneRepo(c *gin.Context) {
+	var req CloneRepoRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	path, err := r.packageHandler.CloneRepo(req.RepoURL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	filePath := filepath.Join(path, req.FolderName)
+	name := filepath.Base(filepath.Clean(path))
+	resp, err := r.packageHandler.addPackage(filePath, name)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"name":     name,
+		"filepath": filePath,
+		"response": resp,
 	})
 }
 
@@ -57,7 +98,6 @@ func (r Router) addPath(c *gin.Context) {
 		"filepath": filePath,
 		"response": resp,
 	})
-	return
 }
 
 func (r Router) getTreeStructure(c *gin.Context) {
@@ -165,6 +205,9 @@ func SetupRouter() *gin.Engine {
 	{
 		// Hello endpoint
 		v1.GET("/hello/:input", r.helloHandler)
+
+		// Clone repository endpoint
+		v1.POST("/clone", r.cloneRepo)
 
 		v1.GET("/file/:name", r.addPath)
 

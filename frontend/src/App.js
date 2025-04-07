@@ -1,83 +1,58 @@
 import { useState } from "react";
 import ErrorMessage from "./components/ErrorMessage";
 import { useNavigate } from "react-router-dom";
-
 import "./App.css";
 
 function App() {
-  const [projectPath, setProjectPath] = useState("Select project folder...");
-  const [serverAvailable, setServerAvailable] = useState();
+  const [repoURL, setRepoURL] = useState("");
+  const [folderName, setFolderName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleFolderSelect = async (event) => {
-    setProjectPath(event.target.value);
-  };
-
-  const onclick = async (event) => {
+  const handleClone = async (event) => {
     event.preventDefault();
 
+    if (!repoURL || !folderName) {
+      setErrorMessage("Please enter both repo URL and folder name.");
+      return;
+    }
+
     setIsButtonDisabled(true);
-    setTimeout(() => {
-      setIsButtonDisabled(false);
-    }, 3000);
-
-    if (projectPath === "Select project folder...") {
-      setErrorMessage("Select Project Folder");
-      return;
-    }
-
-    if (serverAvailable === false) {
-      setErrorMessage("Server is not available. Please try later...");
-      return;
-    }
+    setIsLoading(true);
+    setErrorMessage("");
 
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/hello/test-user`, {
-        method: "GET",
+      const res = await fetch("http://localhost:8080/api/v1/clone", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          repoURL: repoURL,
+          foldername: folderName,
+        }),
       });
-      if (!res.ok) {
-        throw new Error(`Request failed with status ${res.status}`);
-      }
-      setServerAvailable(true);
-    } catch (error) {
-      if (
-        error.name === "TypeError" &&
-        error.message.includes("Failed to fetch")
-      ) {
-        setServerAvailable(false);
-        setErrorMessage("Server is not available. Please try later...");
-      } else {
-        alert(`Error: ${error.message}`);
-      }
-    }
 
-    try {
-      const res = await fetch(
-        `http://localhost:8080/api/v1/file/test-user?filepath=${projectPath}`,
-        {
-          method: "GET",
-        }
-      );
       if (!res.ok) {
-        throw new Error(`Request failed with status ${res.status}`);
+        throw new Error(`Clone request failed with status ${res.status}`);
       }
 
       const data = await res.json();
+
       if (data.response === "Success") {
-        console.log(data);
-        navigate("/dashboard"); 
+        console.log("Cloned:", data);
+        localStorage.setItem("projectName", data.name);
+        navigate("/dashboard");
+      } else {
+        setErrorMessage("Clone failed. Please check the repository and folder name.");
       }
     } catch (error) {
-      if (
-        error.name === "TypeError" &&
-        error.message.includes("Failed to fetch")
-      ) {
-        setErrorMessage("Failed to parse project files");
-      } else {
-        alert(`Error: ${error.message}`);
-      }
+      setErrorMessage(`Error cloning repo: ${error.message}`);
+    } finally {
+      setIsButtonDisabled(false);
+      setIsLoading(false);
     }
   };
 
@@ -88,15 +63,22 @@ function App() {
         <input
           className="input"
           type="text"
-          onChange={handleFolderSelect}
-          placeholder={`GO Project : ${projectPath}`}
-        ></input>
-        <button onClick={onclick} disabled={isButtonDisabled}>
-          GO
+          placeholder="Repository URL"
+          value={repoURL}
+          onChange={(e) => setRepoURL(e.target.value)}
+        />
+        <input
+          className="input"
+          type="text"
+          placeholder="Folder Name"
+          value={folderName}
+          onChange={(e) => setFolderName(e.target.value)}
+        />
+        <button onClick={handleClone} disabled={isButtonDisabled}>
+          {isLoading ? "Cloning..." : "Clone & Go"}
         </button>
       </form>
 
-      {/* Conditionally render the ErrorMessage component if there is an error */}
       {errorMessage && (
         <ErrorMessage
           message={errorMessage}

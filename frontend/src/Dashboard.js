@@ -8,9 +8,10 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
   const [treeStructureData, setTreeStructureData] = useState([]);
   const navigate = useNavigate();
+  const projectName = localStorage.getItem("projectName");
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/v1/gitstats/test-user")
+    fetch(`http://localhost:8080/api/v1/gitstats/${projectName}`)
       .then((res) => res.json())
       .then((json) => {
         const contributors = json.response.contributors;
@@ -36,10 +37,10 @@ const Dashboard = () => {
         console.error("Error fetching stats:", err);
         navigate("/");
       });
-  }, [navigate]);
+  }, [navigate, projectName]);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/v1/treestructure/test-user")
+    fetch(`http://localhost:8080/api/v1/treestructure/${projectName}`)
       .then((res) => res.json())
       .then((json) => {
 		const buildTree = (node) => {
@@ -58,7 +59,7 @@ const Dashboard = () => {
         console.error("Error fetching:", err);
         navigate("/");
       });
-  }, [navigate]);
+  }, [navigate, projectName]);
 
 
 
