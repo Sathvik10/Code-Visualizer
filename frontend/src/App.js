@@ -14,10 +14,10 @@ function App() {
   const handleClone = async (event) => {
     event.preventDefault();
 
-    if (!repoURL || !folderName) {
-      setErrorMessage("Please enter both repo URL and folder name.");
-      return;
-    }
+    // if (!repoURL || !folderName) {
+    //   setErrorMessage("Please enter both repo URL and folder name.");
+    //   return;
+    // }
 
     setIsButtonDisabled(true);
     setIsLoading(true);
