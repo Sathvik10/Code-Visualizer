@@ -72,6 +72,13 @@ func (p PackageHandler) FindFunctions(name, path string) ([]string, error) {
 	return p.packages[name].FindFunctions(path)
 }
 
+func (p PackageHandler) GetFileContributions(name, filePath string) ([]utils.FileContributor, error) {
+	if _, ok := p.packages[name]; !ok {
+		return nil, errors.New("unknown package")
+	}
+	return p.packages[name].GetFileContributions(filePath)
+}
+
 func (p PackageHandler) CloneRepo(repoURL string) (string, error) {
 	// Get present working directory
 	cwd, err := os.Getwd()

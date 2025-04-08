@@ -8,7 +8,9 @@ const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
   const [treeStructureData, setTreeStructureData] = useState([]);
   const navigate = useNavigate();
+  const [fileChartData, setFileChartData] = useState([]);
   const projectName = localStorage.getItem("projectName");
+  const filepath = localStorage.getItem("filepath");
 
   useEffect(() => {
     fetch(`http://localhost:8080/api/v1/gitstats/${projectName}`)
@@ -31,6 +33,7 @@ const Dashboard = () => {
         });
 
         const data = Object.values(aggregated);
+        console.log("Aggregated data:", data);
         setChartData(data);
       })
       .catch((err) => {
@@ -62,6 +65,35 @@ const Dashboard = () => {
   }, [navigate, projectName]);
 
 
+    useEffect(() => {
+      fetch(`http://localhost:8080/api/v1/filestats/${projectName}?filepath=${filepath}`)
+      .then((res) => res.json())
+      .then((json) => {
+        const contributors = json.response;
+  
+        // Aggregate by name + email
+        const aggregated = {};
+        contributors.forEach((c) => {
+          const key = `${c.name}|${c.email}`;
+          if (!aggregated[key]) {
+            aggregated[key] = {
+              name: c.name,
+              email: c.email,
+              count: 0,
+            };
+          }
+          aggregated[key].count += c.commitCount;
+        });
+  
+        const data = Object.values(aggregated);
+        console.log("Aggregated data:", data);
+
+        setFileChartData(data);
+      })
+      .catch((err) => {
+        console.error("Error fetching file-level contributions:", err);
+      });
+  }, [projectName, filepath]);
 
   // return (
   //   <div>
@@ -106,7 +138,8 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex justify-center items-center h-32 border border-dashed rounded">
-            <span className="text-gray-400">[Lint Issue Pie]</span>
+            {/* <span className="text-gray-400">[Lint Issue Pie]</span>  */}
+            <PieChart data={fileChartData} title={"File-Level Contributions"} />
           </div>
           <div className="flex justify-center items-center h-32 border border-dashed rounded">
             <span className="text-gray-400">[Code Coverage Pie]</span>

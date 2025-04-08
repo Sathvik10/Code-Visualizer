@@ -183,6 +183,36 @@ func (r Router) getFunctions(c *gin.Context) {
 		"response": resp,
 	})
 }
+func (r Router) getFileContributions(c *gin.Context) {
+
+	name := c.Param("package")
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing path package parameter",
+		})
+		return
+	}
+	// Get the file path query parameter
+	filePath := c.Query("filepath")
+	// Check if the file path is provided
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing filepath query parameter",
+		})
+		return
+	}
+
+	resp, err := r.packageHandler.GetFileContributions(name, filePath)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"response": resp,
+	})
+}
 
 // Router setup
 func SetupRouter() *gin.Engine {
@@ -216,6 +246,8 @@ func SetupRouter() *gin.Engine {
 		v1.GET("/gitstats/:package", r.getGitStats)
 
 		v1.GET("/functions/:package", r.getFunctions)
+
+		v1.GET("/filestats/:package", r.getFileContributions)
 	}
 
 	return router

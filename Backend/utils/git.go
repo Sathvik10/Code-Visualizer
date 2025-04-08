@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -49,6 +50,13 @@ type GitFileStats struct {
 type GitStatusEntry struct {
 	Path   string `json:"path"`
 	Status string `json:"status"`
+}
+
+// FileContributor represents commit count per person for a file
+type FileContributor struct {
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	CommitCount int    `json:"commitCount"`
 }
 
 // getGitStats retrieves git statistics for a repository
@@ -235,14 +243,53 @@ func CloneRepo(url, dir string) error {
 
 	// Execute git clone command
 	cmd := exec.Command("git", "clone", url, dir)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("git clone failed: %w", err)
 	}
 
 	return nil
+}
+
+func GetFileContributions(cleanPath, filePath string) ([]FileContributor, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	filePath = filepath.Join(cwd, filePath)
+	fmt.Println("File path:", filePath)
+	logOutput, err := execGitCommand(cleanPath, "log", "--follow", "--pretty=format:%an <%ae>", "--", filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get git log for file: %w", err)
+	}
+
+	lines := strings.Split(logOutput, "\n")
+	contribMap := make(map[string]int)
+
+	for _, line := range lines {
+		author := strings.TrimSpace(line)
+		if author != "" {
+			contribMap[author]++
+		}
+	}
+
+	contributors := make([]FileContributor, 0, len(contribMap))
+	for fullAuthor, count := range contribMap {
+		// Split into name and email
+		re := regexp.MustCompile(`^(.*) <(.*)>$`)
+		matches := re.FindStringSubmatch(fullAuthor)
+		if len(matches) == 3 {
+			contributors = append(contributors, FileContributor{
+				Name:        matches[1],
+				Email:       matches[2],
+				CommitCount: count,
+			})
+		}
+	}
+
+	return contributors, nil
 }
 
 // Add this to your router setup

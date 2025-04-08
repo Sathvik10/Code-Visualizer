@@ -141,3 +141,7 @@ func (p PackageManager) FindFunctions(path string) ([]string, error) {
 func (p PackageManager) CloneRepo(url, branch string) error {
 	return utils.CloneRepo(url, p.dirPath)
 }
+
+func (p PackageManager) GetFileContributions(filePath string) ([]utils.FileContributor, error) {
+	return utils.GetFileContributions(p.dirPath, filePath)
+}

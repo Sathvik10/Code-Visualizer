@@ -31,7 +31,7 @@ const PieChart = ({ data, title }) => {
       const data_ready = pie(data);
   
       const tooltip = d3
-        .select(container)
+        .select(container.parentElement)
         .append("div")
         .attr("class", "tooltip")
         .style("position", "absolute")
@@ -81,7 +81,13 @@ const PieChart = ({ data, title }) => {
         .data(data_ready)
         .enter()
         .append("text")
-        .text((d) => `${d.data.name} (${d.data.count})`)
+        .text((d) => {
+          const initials = d.data.name
+            .split(" ")
+            .map(word => word[0])
+            .join("");
+          return `${initials} (${d.data.count})`;
+        })
         .attr("transform", (d) => `translate(${arc.centroid(d)})`)
         .style("text-anchor", "middle")
         .style("font-size", "12px");
