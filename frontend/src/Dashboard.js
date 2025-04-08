@@ -91,7 +91,7 @@ const Dashboard = () => {
       <div className="bg-gray-100 rounded-2xl shadow p-4 overflow-auto">
         <h2 className="text-xl font-semibold mb-2">Tree View</h2>
         {/* Placeholder for Tree Diagram */}
-        <div className="h-full border border-dashed rounded p-2 flex items-center justify-center">
+        <div className="h-full border border-dashed rounded flex items-stretch justify-center">
           <TidyTree data={treeStructureData}/>
         </div>
       </div>
