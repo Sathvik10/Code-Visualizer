@@ -8,8 +8,11 @@ const TidyTree = ({ data }) => {
     const width = 600;
 
     const root = d3.hierarchy(data);
-    const dx = 10;
-    const dy = (width) / (1 + root.height);
+    const dx = 40;
+    const dy = (width / (1 + root.height));
+
+    const marginLeft = 20;
+    const marginTop = 10;
 
     // Create a tree layout.
     const tree = d3.tree().nodeSize([dx, dy]);
@@ -32,8 +35,8 @@ const TidyTree = ({ data }) => {
     const svg = d3.select(svgRef.current)
       .attr("width", width)
       .attr("height", dx * 2)
-      .attr("viewBox", [-dy / 3, -dx, width, dx])
-      .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif; user-select: none;");
+      .attr("viewBox", [0, -dx, width, dx * 2])
+      .attr("style", "max-width: 100%; height: 100vh; position: relative; font: 14px sans-serif; user-select: none;");
 
     svg.selectAll("*").remove();
 
@@ -67,7 +70,7 @@ const TidyTree = ({ data }) => {
       const transition = svg.transition()
         .duration(duration)
         .attr("height", height)
-        .attr("viewBox", [-dy / 3, left.x - dx, width, height])
+        .attr("viewBox", [-(left.y - 40), left.x - dx, width, height])
         .tween("resize", window.ResizeObserver ? null : () => () => svg.dispatch("toggle"));
 
       const node = gNode.selectAll("g")
@@ -89,7 +92,7 @@ const TidyTree = ({ data }) => {
       
       nodeEnter.append("text")
         .attr("dy", "0.31em")
-        .attr("x", d => d._children ? -6 : 6)
+        .attr("x", d => d._children ? -10 : 10)
         .attr("text-anchor", d => d._children ? "end" : "start")
         .text(d => d.data.name)
         .attr("stroke", "white")
@@ -143,7 +146,10 @@ const TidyTree = ({ data }) => {
 
   }, [data]);
 
-  return <svg ref={svgRef}></svg>;
+  return (
+      <svg ref={svgRef}></svg>
+  );
+  
 };
 
 export default TidyTree;
