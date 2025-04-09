@@ -10,7 +10,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [fileChartData, setFileChartData] = useState([]);
   const projectName = localStorage.getItem("projectName");
-  const filepath = localStorage.getItem("filepath");
+  // const filepath = localStorage.getItem("filepath");
+  const [filepath, setFilepath] = useState(localStorage.getItem("filepath") || "");
+  const apipath = localStorage.getItem("apipath");
 
   useEffect(() => {
     fetch(`http://localhost:8080/api/v1/gitstats/${projectName}`)
@@ -49,6 +51,7 @@ const Dashboard = () => {
 		const buildTree = (node) => {
 			return {
 			  name: node.name || "root",
+        path: node.path || "",
 			  children: (node.children || [])
 				.filter(child => child.isDir || child.name) // optional filtering
 				.map(buildTree)
@@ -66,7 +69,7 @@ const Dashboard = () => {
 
 
     useEffect(() => {
-      fetch(`http://localhost:8080/api/v1/filestats/${projectName}?filepath=${filepath}`)
+      fetch(`http://localhost:8080/api/v1/filestats/${projectName}?filepath=${apipath}`)
       .then((res) => res.json())
       .then((json) => {
         const contributors = json.response;
@@ -93,40 +96,29 @@ const Dashboard = () => {
       .catch((err) => {
         console.error("Error fetching file-level contributions:", err);
       });
-  }, [projectName, filepath]);
+  }, [projectName, filepath, apipath]);
 
-  // return (
-  //   <div>
+  const handleNodeClick = (clickedPath) => {
+    const basePath = localStorage.getItem("filepath") || "";
+    // Make sure there's a `/` between them
+    const combinedPath = basePath.endsWith("/")
+      ? basePath + clickedPath
+      : basePath + "/" + clickedPath;
+  
+    localStorage.setItem("apipath", combinedPath);
+    setFilepath(combinedPath);
+  };
 
-  //   <h2 style={{ textAlign: "center" }}>Dashboard</h2>
-    
-  //   <Split
-  //     className="dashboard-container"
-  //     direction="horizontal"
-  //     sizes={[33.33, 33.33, 33.33]}
-  //     minSize={100}
-  //     gutterSize={3}
-  //   >
-  //     <div className="dashboard-section" >
-  //       <TidyTree data={treeStructureData}/>
-  //     </div>
-  //     <div className="dashboard-section">
-  //       <PieChart data={chartData} title={"Contributor Commit Distribution"}/>
-  //     </div>
-  //     <div className="dashboard-section">Component 3</div>
-  //   </Split>
-  //   </div>
-  // );
   return (
     <div>
       <div className="bg-white rounded-2xl shadow p-4 h-[600px] overflow-hidden border border-gray-200">
-        <TidyTree data={treeStructureData} />
+        <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
       </div>
       <div className="bg-white rounded-2xl shadow p-4 h-[600px] overflow-hidden border border-gray-200">
-        <PieChart data={chartData} title={"Contributor Commit Distribution"}/>
+        <PieChart data={fileChartData} title={"File-Level Contributions"} />
       </div>
       <div className="bg-white rounded-2xl shadow p-4 h-[600px] overflow-hidden border border-gray-200">
-        <PieChart data={chartData} title={"Contributor Commit Distribution"}/>
+        <PieChart data={chartData} title={"Overall Contributions"} />
       </div>
     </div>
   );

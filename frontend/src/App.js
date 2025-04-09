@@ -45,6 +45,7 @@ function App() {
         console.log("Cloned:", data);
         localStorage.setItem("projectName", data.name);
         localStorage.setItem("filepath", data.filepath);
+        localStorage.setItem("apipath", data.filepath);
         navigate("/dashboard");
       } else {
         setErrorMessage("Clone failed. Please check the repository and folder name.");

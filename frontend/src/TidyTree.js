@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 
-const TidyTree = ({ data }) => {
+const TidyTree = ({ data, onNodeClick }) => {
   const svgRef = useRef();
   const wrapperRef = useRef();
   const zoomRef = useRef();
@@ -115,6 +115,10 @@ const TidyTree = ({ data }) => {
         .on("click", (event, d) => {
           d.children = d.children ? null : d._children;
           update(event, d);
+          console.log("Clicked node:", d.data.path);
+          if (onNodeClick) {
+            onNodeClick(d.data.path); // Send path to Dashboard
+          }
         });
 
       // Adjust node appearance based on children state
