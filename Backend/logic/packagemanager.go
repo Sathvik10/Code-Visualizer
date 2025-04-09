@@ -134,6 +134,10 @@ func (p PackageManager) GetGitStats() utils.GitStats {
 	return utils.GetGitStats(p.dirPath)
 }
 
+func (p PackageManager) GetLintIssues() (utils.LintIssues, error) {
+	return utils.AnalyzeCodeWithGolangCILint(p.dirPath)
+}
+
 func (p PackageManager) FindFunctions(path string) ([]string, error) {
 	return utils.FindFunctions(path)
 }

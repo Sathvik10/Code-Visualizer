@@ -65,6 +65,14 @@ func (p PackageHandler) GetGitStats(name string) (utils.GitStats, error) {
 	return p.packages[name].GetGitStats(), nil
 }
 
+func (p PackageHandler) GetLintIssues(name string) (utils.LintIssues, error) {
+	if _, ok := p.packages[name]; !ok {
+		return utils.LintIssues{}, errors.New("unknown package")
+
+	}
+	return p.packages[name].GetLintIssues()
+}
+
 func (p PackageHandler) FindFunctions(name, path string) ([]string, error) {
 	if _, ok := p.packages[name]; !ok {
 		return nil, errors.New("unknown package")

@@ -131,6 +131,28 @@ func (r Router) getTreeStructure(c *gin.Context) {
 	})
 }
 
+func (r Router) getLintIssues(c *gin.Context) {
+
+	name := c.Param("package")
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing path package parameter",
+		})
+		return
+	}
+
+	resp, err := r.packageHandler.GetLintIssues(name)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"response": resp,
+	})
+}
+
 func (r Router) getGitStats(c *gin.Context) {
 
 	name := c.Param("package")
@@ -244,6 +266,8 @@ func SetupRouter() *gin.Engine {
 		v1.GET("/treestructure/:package", r.getTreeStructure)
 
 		v1.GET("/gitstats/:package", r.getGitStats)
+
+		v1.GET("/lintissues/:package", r.getLintIssues)
 
 		v1.GET("/functions/:package", r.getFunctions)
 
