@@ -31,7 +31,7 @@ const Dashboard = () => {
               count: 0,
             };
           }
-          aggregated[key].count += c.commitCount;
+          aggregated[key].count += c.totalContributionPercentage;
         });
 
         const data = Object.values(aggregated);
@@ -85,7 +85,7 @@ const Dashboard = () => {
               count: 0,
             };
           }
-          aggregated[key].count += c.commitCount;
+          aggregated[key].count += c.totalContributionPercentage;
         });
   
         const data = Object.values(aggregated);

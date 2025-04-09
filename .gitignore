@@ -2,3 +2,5 @@
 .DS_Store
 */.DS_Store
 /Backend/repos
+/Backend/__debug*
+.vscode/*

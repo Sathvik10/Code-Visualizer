@@ -90,7 +90,7 @@ const PieChart = ({ data, title }) => {
             .split(" ")
             .map(word => word[0])
             .join("");
-          return `${initials} (${d.data.count})`;
+          return `${initials} (${d.data.count} %)`;
         })
         .attr("transform", (d) => `translate(${arc.centroid(d)})`)
         .style("text-anchor", "middle")
