@@ -79,61 +79,48 @@ const PieChart = ({ data, title }) => {
             .attr("d", arc)
             .style("opacity", 1);
         });
-  
-      // Create labels
-      // svg
-      //   .selectAll("text")
-      //   .data(data_ready)
-      //   .enter()
-      //   .append("text")
-      //   .text((d) => {
-      //     const initials = d.data.name
-      //       .split(" ")
-      //       .map(word => word[0])
-      //       .join("");
-      //     return `${initials} (${d.data.count} %)`;
-      //   })
-      //   .attr("transform", (d) => `translate(${arc.centroid(d)})`)
-      //   .style("text-anchor", "middle")
-      //   .style("font-size", "12px");
 
       const outerArc = d3.arc()
         .innerRadius(radius * 1.2)
         .outerRadius(radius * 1.2);
 
-        svg.selectAll('allPolylines')
-          .data(data_ready)
-          .join('polyline')
-            .attr("stroke", "black")
-            .style("fill", "none")
-            .attr("stroke-width", 1)
-            .attr('points', function(d) {
-              const posA = arc.centroid(d) // line insertion in the slice
-              const posB = outerArc.centroid(d) // line break: we use the other arc generator
-              const posC = outerArc.centroid(d) // Label position = line break + 30%
-              const midangle = d.startAngle + (d.endAngle - d.startAngle) / 2 // angle for positioning
-              posC[0] = radius * 0.95 * (midangle < Math.PI ? 1 : -1); // Adjust X position for left/right
-              return [posA, posB, posC];
-            });
+      // Define minimum angle threshold for displaying labels (in radians)
+      // This determines how small a sector can be before its label is hidden
+      const MIN_ANGLE_FOR_LABEL = 0.1; // Adjust this value as needed
+      
+      // Only create polylines for sectors large enough to display labels
+      svg.selectAll('allPolylines')
+        .data(data_ready.filter(d => (d.endAngle - d.startAngle) >= MIN_ANGLE_FOR_LABEL))
+        .join('polyline')
+          .attr("stroke", "black")
+          .style("fill", "none")
+          .attr("stroke-width", 1)
+          .attr('points', function(d) {
+            const posA = arc.centroid(d) // line insertion in the slice
+            const posB = outerArc.centroid(d) // line break: we use the other arc generator
+            const posC = outerArc.centroid(d) // Label position = line break + 30%
+            const midangle = d.startAngle + (d.endAngle - d.startAngle) / 2 // angle for positioning
+            posC[0] = radius * 0.95 * (midangle < Math.PI ? 1 : -1); // Adjust X position for left/right
+            return [posA, posB, posC];
+          });
 
-        svg.selectAll('allLabels')
-          .data(data_ready)
-          .join('text')
-            .text(d => d.data.name + " (" + d.data.count + "%)")
-            .attr('transform', function(d) {
-              const pos = outerArc.centroid(d);
-              const midangle = d.startAngle + (d.endAngle - d.startAngle) / 2
-              pos[0] = radius * 0.99 * (midangle < Math.PI ? 1 : -1);
-              return `translate(${pos})`;
-            })
-          .style('text-anchor', function(d) {
-              const midangle = d.startAngle + (d.endAngle - d.startAngle) / 2
-              return (midangle < Math.PI ? 'start' : 'end')
+      // Only create labels for sectors large enough to display them
+      svg.selectAll('allLabels')
+        .data(data_ready.filter(d => (d.endAngle - d.startAngle) >= MIN_ANGLE_FOR_LABEL))
+        .join('text')
+          .text(d => d.data.name + " (" + d.data.count + "%)")
+          .attr('transform', function(d) {
+            const pos = outerArc.centroid(d);
+            const midangle = d.startAngle + (d.endAngle - d.startAngle) / 2
+            pos[0] = radius * 0.99 * (midangle < Math.PI ? 1 : -1);
+            return `translate(${pos})`;
           })
-          .style("font-size", "12px")
-          .style("font-weight", "bold")
-
-
+        .style('text-anchor', function(d) {
+            const midangle = d.startAngle + (d.endAngle - d.startAngle) / 2
+            return (midangle < Math.PI ? 'start' : 'end')
+        })
+        .style("font-size", "12px")
+        .style("font-weight", "bold");
     };
   
     const resizeObserver = new ResizeObserver(() => {
