@@ -110,15 +110,20 @@ const Dashboard = () => {
   };
 
   return (
-    <div>
-      <div className="bg-white rounded-2xl shadow p-4 h-[600px] overflow-hidden border border-gray-200">
+    <div className="flex h-screen w-full gap-4 p-4 box-border">
+      {/* Left - TidyTree */}
+      <div className="flex-1 bg-white rounded-2xl shadow p-4 overflow-hidden border border-gray-200">
         <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
       </div>
-      <div className="bg-white rounded-2xl shadow p-4 h-[600px] overflow-hidden border border-gray-200">
-        <PieChart data={fileChartData} title={"File-Level Contributions"} />
-      </div>
-      <div className="bg-white rounded-2xl shadow p-4 h-[600px] overflow-hidden border border-gray-200">
-        <PieChart data={chartData} title={"Overall Contributions"} />
+
+      {/* Right - Stacked Pie Charts */}
+      <div className="flex flex-col gap-4 w-[40%] h-full">
+        <div className="flex-1 bg-white rounded-2xl shadow p-4 overflow-hidden border border-gray-200">
+          <PieChart data={fileChartData} title={"File-Level Contributions"} />
+        </div>
+        <div className="flex-1 bg-white rounded-2xl shadow p-4 overflow-hidden border border-gray-200">
+          <PieChart data={chartData} title={"Overall Contributions"} />
+        </div>
       </div>
     </div>
   );

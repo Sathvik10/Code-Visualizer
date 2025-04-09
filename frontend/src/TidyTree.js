@@ -185,7 +185,7 @@ const TidyTree = ({ data, onNodeClick }) => {
       // Only center on first render
       if (isFirstRender) {
         const initialTransform = d3.zoomIdentity
-          .translate(width / 2 - root.y, dimensions.height / 2 - root.x);
+          .translate(width / 3 - root.y, dimensions.height / 2.1 - root.x);
         
         svg.transition().duration(duration).call(zoom.transform, initialTransform);
         zoomRef.current = initialTransform;
@@ -202,7 +202,7 @@ const TidyTree = ({ data, onNodeClick }) => {
     });
 
     update(null, root);
-  }, [data, dimensions]);
+  }, [data, dimensions, onNodeClick]);
 
   return (
     <div ref={wrapperRef} style={{ width: "100%", height: "100vh", overflow: "hidden" }}>
