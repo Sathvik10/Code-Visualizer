@@ -25,8 +25,8 @@ const PieChart = ({ data, title }) => {
   
       const color = d3.scaleOrdinal(d3.schemeTableau10);
       const pie = d3.pie().value((d) => d.count);
-      const arc = d3.arc().innerRadius(0).outerRadius(radius);
-      const arcHover = d3.arc().innerRadius(0).outerRadius(radius + 10);
+      const arc = d3.arc().innerRadius(0.5 * radius).outerRadius(radius);
+      const arcHover = d3.arc().innerRadius(0.5 * radius).outerRadius(radius + 10);
   
       const data_ready = pie(data);
   
@@ -80,21 +80,59 @@ const PieChart = ({ data, title }) => {
         });
   
       // Create labels
-      svg
-        .selectAll("text")
-        .data(data_ready)
-        .enter()
-        .append("text")
-        .text((d) => {
-          const initials = d.data.name
-            .split(" ")
-            .map(word => word[0])
-            .join("");
-          return `${initials} (${d.data.count} %)`;
-        })
-        .attr("transform", (d) => `translate(${arc.centroid(d)})`)
-        .style("text-anchor", "middle")
-        .style("font-size", "12px");
+      // svg
+      //   .selectAll("text")
+      //   .data(data_ready)
+      //   .enter()
+      //   .append("text")
+      //   .text((d) => {
+      //     const initials = d.data.name
+      //       .split(" ")
+      //       .map(word => word[0])
+      //       .join("");
+      //     return `${initials} (${d.data.count} %)`;
+      //   })
+      //   .attr("transform", (d) => `translate(${arc.centroid(d)})`)
+      //   .style("text-anchor", "middle")
+      //   .style("font-size", "12px");
+
+      const outerArc = d3.arc()
+        .innerRadius(radius * 1.2)
+        .outerRadius(radius * 1.2);
+
+        svg.selectAll('allPolylines')
+          .data(data_ready)
+          .join('polyline')
+            .attr("stroke", "black")
+            .style("fill", "none")
+            .attr("stroke-width", 1)
+            .attr('points', function(d) {
+              const posA = arc.centroid(d) // line insertion in the slice
+              const posB = outerArc.centroid(d) // line break: we use the other arc generator
+              const posC = outerArc.centroid(d) // Label position = line break + 30%
+              const midangle = d.startAngle + (d.endAngle - d.startAngle) / 2 // angle for positioning
+              posC[0] = radius * 0.95 * (midangle < Math.PI ? 1 : -1); // Adjust X position for left/right
+              return [posA, posB, posC];
+            });
+
+        svg.selectAll('allLabels')
+          .data(data_ready)
+          .join('text')
+            .text(d => d.data.name + " (" + d.data.count + "%)")
+            .attr('transform', function(d) {
+              const pos = outerArc.centroid(d);
+              const midangle = d.startAngle + (d.endAngle - d.startAngle) / 2
+              pos[0] = radius * 0.99 * (midangle < Math.PI ? 1 : -1);
+              return `translate(${pos})`;
+            })
+          .style('text-anchor', function(d) {
+              const midangle = d.startAngle + (d.endAngle - d.startAngle) / 2
+              return (midangle < Math.PI ? 'start' : 'end')
+          })
+          .style("font-size", "12px")
+          .style("font-weight", "bold")
+
+
     };
   
     const resizeObserver = new ResizeObserver(() => {
