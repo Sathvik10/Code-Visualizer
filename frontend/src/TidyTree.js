@@ -4,6 +4,7 @@ import * as d3 from 'd3';
 const TidyTree = ({ data }) => {
   const svgRef = useRef();
   const wrapperRef = useRef();
+  const zoomRef = useRef();
   const [dimensions, setDimensions] = useState({ width: 600, height: 600 });
 
   useEffect(() => {
@@ -46,6 +47,19 @@ const TidyTree = ({ data }) => {
     const gNode = gZoom.append("g")
       .attr("cursor", "pointer")
       .attr("pointer-events", "all");
+
+    // Define zoom behavior
+    const zoom = d3.zoom()
+      .scaleExtent([0.5, 2])
+      .on("zoom", (event) => {
+        gZoom.attr("transform", event.transform);
+        zoomRef.current = event.transform; // Store current transform
+      });
+
+    svg.call(zoom);
+    
+    // Initial centering only on first render
+    let isFirstRender = true;
 
     function update(event, source) {
       const duration = event?.altKey ? 2500 : 200;
@@ -125,12 +139,16 @@ const TidyTree = ({ data }) => {
         d.x0 = d.x;
         d.y0 = d.y;
       });
-
-      // Center the tree in the visible SVG area
-      const initialTransform = d3.zoomIdentity
-        .translate((width - treeWidth) / 2, (dimensions.height - treeHeight) / 2);
-
-      svg.call(zoom.transform, initialTransform);
+      
+      // Only center on first render
+      if (isFirstRender) {
+        const initialTransform = d3.zoomIdentity
+          .translate(width / 2 - root.y, dimensions.height / 3 - root.x);
+        
+        svg.transition().duration(duration).call(zoom.transform, initialTransform);
+        zoomRef.current = initialTransform;
+        isFirstRender = false;
+      }
     }
 
     root.x0 = dx / 2;
@@ -141,13 +159,6 @@ const TidyTree = ({ data }) => {
       if (d.depth && d.data.name.length !== 7) d.children = null;
     });
 
-    const zoom = d3.zoom()
-      .scaleExtent([1, 1]) // disables zooming
-      .on("zoom", (event) => {
-        gZoom.attr("transform", event.transform);
-      });
-
-    svg.call(zoom);
     update(null, root);
   }, [data, dimensions]);
 
