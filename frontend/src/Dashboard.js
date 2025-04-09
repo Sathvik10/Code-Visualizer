@@ -3,6 +3,7 @@ import PieChart from "./PieChart";
 import { useNavigate } from "react-router-dom";
 import "./DashboardPage.css";
 import TidyTree from "./TidyTree";
+import CircularPacking from "./CirclePack";
 
 const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
@@ -121,9 +122,11 @@ const Dashboard = () => {
       <div className="w-2/5 flex flex-col gap-4 h-full">
         <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
           <PieChart data={fileChartData} title={"File-Level Contributions"} />
+          {/* <CircularPacking  data={fileChartData} title={"File-Level Contributions"} /> */}
         </div>
         <div className="bg-white rounded-2xl  p-4 h-1/2 overflow-hidden border border-gray-200">
-          <PieChart data={chartData} title={"Overall Contributions"} />
+          {/* <PieChart data={chartData} title={"Overall Contributions"} /> */}
+          <CircularPacking  data={chartData} title={"Overall Contributions"} />
         </div>
       </div>
     </div>
