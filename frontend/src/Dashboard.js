@@ -118,14 +118,16 @@ const Dashboard = () => {
   //   </div>
   // );
   return (
-    <div className="flex h-screen p-4 gap-4 items-center justify-center">
-      {/* Left Column - Tree View */}
-      {/* <div className="bg-gray-100 rounded-2xl shadow p-4 overflow-auto"> */}
-        <h2 className="text-xl font-semibold mb-2">Tree View</h2>
-        {/* Placeholder for Tree Diagram */}
-          <TidyTree data={treeStructureData}/>
-      {/* </div> */}
-
+    <div>
+      <div className="bg-white rounded-2xl shadow p-4 h-[600px] overflow-hidden border border-gray-200">
+        <TidyTree data={treeStructureData} />
+      </div>
+      <div className="bg-white rounded-2xl shadow p-4 h-[600px] overflow-hidden border border-gray-200">
+        <PieChart data={chartData} title={"Contributor Commit Distribution"}/>
+      </div>
+      <div className="bg-white rounded-2xl shadow p-4 h-[600px] overflow-hidden border border-gray-200">
+        <PieChart data={chartData} title={"Contributor Commit Distribution"}/>
+      </div>
     </div>
   );
 };

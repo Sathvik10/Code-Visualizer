@@ -18,10 +18,10 @@ const PieChart = ({ data, title }) => {
       const svg = d3
         .select(container)
         .append("svg")
-        .attr("width", width)
-        .attr("height", height)
+        .attr("width", width + 40) // add padding space
+        .attr("height", height + 40)
         .append("g")
-        .attr("transform", `translate(${width / 2}, ${height / 2})`);
+        .attr("transform", `translate(${(width + 40) / 2}, ${(height + 40) / 2})`);
   
       const color = d3.scaleOrdinal(d3.schemeTableau10);
       const pie = d3.pie().value((d) => d.count);
@@ -30,18 +30,21 @@ const PieChart = ({ data, title }) => {
   
       const data_ready = pie(data);
   
+      // Tooltip creation
       const tooltip = d3
         .select(container.parentElement)
         .append("div")
         .attr("class", "tooltip")
-        .style("position", "absolute")
+        .style("position", "fixed") // Use fixed position for consistent visibility
         .style("visibility", "hidden")
         .style("background-color", "rgba(0, 0, 0, 0.7)")
         .style("color", "#fff")
         .style("padding", "5px")
         .style("border-radius", "5px")
-        .style("font-size", "12px");
+        .style("font-size", "12px")
+        .style("pointer-events", "none"); // Make sure it doesn't interfere with interactions
   
+      // Create chart slices
       svg
         .selectAll("path")
         .data(data_ready)
@@ -64,8 +67,8 @@ const PieChart = ({ data, title }) => {
         })
         .on("mousemove", function (event) {
           tooltip
-            .style("top", event.pageY + 10 + "px")
-            .style("left", event.pageX + 10 + "px");
+            .style("top", `${event.clientY + 10}px`)  // Adjust for cursor position
+            .style("left", `${event.clientX + 10}px`); // Adjust for cursor position
         })
         .on("mouseleave", function () {
           tooltip.style("visibility", "hidden");
@@ -76,6 +79,7 @@ const PieChart = ({ data, title }) => {
             .style("opacity", 1);
         });
   
+      // Create labels
       svg
         .selectAll("text")
         .data(data_ready)
@@ -102,12 +106,11 @@ const PieChart = ({ data, title }) => {
   
     return () => resizeObserver.disconnect();
   }, [data]);
-  
 
   return (
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
       {title && <h3 style={{ textAlign: "center" }}>{title}</h3>}
-      <div ref={chartRef} style={{ width: "100%", height: "100%" }} />
+      <div ref={chartRef} style={{ width: "90%", height: "90%" }} />
     </div>
   );  
 };
