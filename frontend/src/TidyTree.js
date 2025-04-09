@@ -27,7 +27,27 @@ const TidyTree = ({ data }) => {
     const width = dimensions.width;
     const dx = 40;
     const root = d3.hierarchy(data);
-    const dy = width / (1 + root.height);
+    
+    // Calculate and apply dynamic spacing based on tree depth and expanded nodes
+    function calculateDynamicSpacing(root) {
+      // Start with a base spacing
+      let baseSpacing = width / (1 + root.height);
+      
+      // Count expanded nodes at each depth level
+      const depthExpansion = {};
+      root.each(d => {
+        if (d.children && d.children.length > 0) {
+          depthExpansion[d.depth] = (depthExpansion[d.depth] || 0) + 1;
+        }
+      });
+      
+      // Adjust spacing based on expansion count - minimum 120px between levels
+      const dynamicDy = Math.max(baseSpacing, 120);
+      
+      return dynamicDy;
+    }
+    
+    const dy = calculateDynamicSpacing(root);
 
     const tree = d3.tree().nodeSize([dx, dy]);
     const diagonal = d3.linkHorizontal().x(d => d.y).y(d => d.x);
@@ -63,6 +83,11 @@ const TidyTree = ({ data }) => {
 
     function update(event, source) {
       const duration = event?.altKey ? 2500 : 200;
+      
+      // Recalculate dynamic spacing whenever a node is expanded/collapsed
+      const dynamicDy = calculateDynamicSpacing(root);
+      tree.nodeSize([dx, dynamicDy]);
+      
       const nodes = root.descendants().reverse();
       const links = root.links();
 
@@ -92,11 +117,13 @@ const TidyTree = ({ data }) => {
           update(event, d);
         });
 
+      // Adjust node appearance based on children state
       nodeEnter.append("circle")
-        .attr("r", 3)
+        .attr("r", 3.5)
         .attr("fill", d => d._children ? "#555" : "#999")
         .attr("stroke-width", 10);
 
+      // Calculate text padding based on node depth and expanded state
       nodeEnter.append("text")
         .attr("dy", "0.31em")
         .attr("x", d => d._children ? -10 : 10)
@@ -106,6 +133,17 @@ const TidyTree = ({ data }) => {
         .attr("paint-order", "stroke")
         .attr("stroke-width", 3)
         .attr("stroke-linejoin", "round");
+
+      // Adjust node positions with more horizontal spacing
+      root.each(d => {
+        // Increase horizontal spacing for expanded nodes
+        d.y = d.depth * dynamicDy;
+        
+        // Apply additional spacing for nodes with expanded children
+        if (d.children && d.children.length > 0) {
+          d.y += 30; // Push expanded nodes further to the right
+        }
+      });
 
       node.merge(nodeEnter).transition().duration(duration)
         .attr("transform", d => `translate(${d.y},${d.x})`)
@@ -143,7 +181,7 @@ const TidyTree = ({ data }) => {
       // Only center on first render
       if (isFirstRender) {
         const initialTransform = d3.zoomIdentity
-          .translate(width / 2 - root.y, dimensions.height / 3 - root.x);
+          .translate(width / 2 - root.y, dimensions.height / 2 - root.x);
         
         svg.transition().duration(duration).call(zoom.transform, initialTransform);
         zoomRef.current = initialTransform;
