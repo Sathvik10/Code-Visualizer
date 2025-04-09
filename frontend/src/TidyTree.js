@@ -171,6 +171,13 @@ const TidyTree = ({ data, onNodeClick }) => {
             : "#999"
         );
 
+      node
+        .merge(nodeEnter)
+        .select("text")
+        .transition()
+        .duration(duration)
+        .attr("fill", (d) => (highlightedPath.includes(d) ? "#f00" : "black"));
+
       // Adjust node positions with more horizontal spacing
       root.each((d) => {
         // Increase horizontal spacing for expanded nodes
