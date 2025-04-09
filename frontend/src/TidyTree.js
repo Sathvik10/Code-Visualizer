@@ -89,7 +89,8 @@ const TidyTree = ({ data, onNodeClick }) => {
     // Initial centering only on first render
     let isFirstRender = true;
 
-    function update(event, source) {
+    function update(event, source, newHighlightedPath = []) {
+      highlightedPath = newHighlightedPath;
       const duration = event?.altKey ? 2500 : 200;
 
       // Recalculate dynamic spacing whenever a node is expanded/collapsed
@@ -123,15 +124,14 @@ const TidyTree = ({ data, onNodeClick }) => {
         .attr("stroke-opacity", 0)
         .on("click", (event, d) => {
           d.children = d.children ? null : d._children;
-          update(event, d);
-
-          // === HIGHLIGHT PATH ===
-          highlightedPath = [];
+          const pathToRoot = [];
           let current = d;
           while (current) {
-            highlightedPath.push(current);
+            pathToRoot.push(current);
             current = current.parent;
           }
+
+          update(event, d, pathToRoot);
 
           if (onNodeClick) {
             onNodeClick(d.data.path);
