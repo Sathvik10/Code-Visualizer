@@ -7,6 +7,8 @@ const TidyTree = ({ data, onNodeClick }) => {
   const zoomRef = useRef();
   const [dimensions, setDimensions] = useState({ width: 600, height: 600 });
 
+  let highlightedPath = [];
+
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
       if (!entries.length) return;
@@ -87,7 +89,8 @@ const TidyTree = ({ data, onNodeClick }) => {
     // Initial centering only on first render
     let isFirstRender = true;
 
-    function update(event, source) {
+    function update(event, source, newHighlightedPath = []) {
+      highlightedPath = newHighlightedPath;
       const duration = event?.altKey ? 2500 : 200;
 
       // Recalculate dynamic spacing whenever a node is expanded/collapsed
@@ -121,10 +124,17 @@ const TidyTree = ({ data, onNodeClick }) => {
         .attr("stroke-opacity", 0)
         .on("click", (event, d) => {
           d.children = d.children ? null : d._children;
-          update(event, d);
-          console.log("Clicked node:", d.data.path);
+          const pathToRoot = [];
+          let current = d;
+          while (current) {
+            pathToRoot.push(current);
+            current = current.parent;
+          }
+
+          update(event, d, pathToRoot);
+
           if (onNodeClick) {
-            onNodeClick(d.data.path); // Send path to Dashboard
+            onNodeClick(d.data.path);
           }
         });
 
@@ -146,6 +156,23 @@ const TidyTree = ({ data, onNodeClick }) => {
         .attr("paint-order", "stroke")
         .attr("stroke-width", 3)
         .attr("stroke-linejoin", "round");
+
+      // Highlighted nodes
+      node
+        .merge(nodeEnter)
+        .select("circle")
+        .transition()
+        .duration(duration)
+        .attr("fill", (d) =>
+          highlightedPath.includes(d) ? "#f00" : d._children ? "#555" : "#999"
+        );
+
+      node
+        .merge(nodeEnter)
+        .select("text")
+        .transition()
+        .duration(duration)
+        .attr("fill", (d) => (highlightedPath.includes(d) ? "#f00" : "black"));
 
       // Adjust node positions with more horizontal spacing
       root.each((d) => {
