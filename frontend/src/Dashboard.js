@@ -37,7 +37,7 @@ const Dashboard = () => {
         });
 
         const data = Object.values(aggregated);
-        console.log("Aggregated data:", data);
+        // console.log("Aggregated data:", data);
         setChartData(data);
       })
       .catch((err) => {
@@ -92,7 +92,7 @@ const Dashboard = () => {
         });
 
         const data = Object.values(aggregated);
-        console.log("Aggregated data:", data);
+        // console.log("Aggregated data:", data);
 
         setFileChartData(data);
       })

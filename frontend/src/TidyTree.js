@@ -7,6 +7,8 @@ const TidyTree = ({ data, onNodeClick }) => {
   const zoomRef = useRef();
   const [dimensions, setDimensions] = useState({ width: 600, height: 600 });
 
+  let highlightedPath = [];
+
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
       if (!entries.length) return;
@@ -122,9 +124,17 @@ const TidyTree = ({ data, onNodeClick }) => {
         .on("click", (event, d) => {
           d.children = d.children ? null : d._children;
           update(event, d);
-          console.log("Clicked node:", d.data.path);
+
+          // === HIGHLIGHT PATH ===
+          highlightedPath = [];
+          let current = d;
+          while (current) {
+            highlightedPath.push(current);
+            current = current.parent;
+          }
+
           if (onNodeClick) {
-            onNodeClick(d.data.path); // Send path to Dashboard
+            onNodeClick(d.data.path);
           }
         });
 
@@ -146,6 +156,20 @@ const TidyTree = ({ data, onNodeClick }) => {
         .attr("paint-order", "stroke")
         .attr("stroke-width", 3)
         .attr("stroke-linejoin", "round");
+
+      // Highlighted nodes
+      node
+        .merge(nodeEnter)
+        .select("circle")
+        .transition()
+        .duration(duration)
+        .attr("fill", (d) =>
+          highlightedPath.includes(d)
+            ? "#f00" // Highlighted node color (red)
+            : d._children
+            ? "#555"
+            : "#999"
+        );
 
       // Adjust node positions with more horizontal spacing
       root.each((d) => {
