@@ -19,7 +19,8 @@ const PieChart = ({ data, title }) => {
         .select(container)
         .append("svg")
         .attr("width", width + 40) // add padding space
-        .attr("height", height + 40)
+        .attr("height", height + 20)
+        .attr("viewBox", `0 ${-30} ${width} ${height + 60}`)
         .append("g")
         .attr("transform", `translate(${(width + 40) / 2}, ${(height + 40) / 2})`);
   
