@@ -149,3 +149,18 @@ func (p PackageManager) CloneRepo(url, branch string) error {
 func (p PackageManager) GetFileContributions(filePath string) ([]utils.FileContributor, error) {
 	return utils.GetFileContributions(p.dirPath, filePath)
 }
+
+func (p PackageManager) GetFileContent(filePath string) (string, error) {
+	stats, err := os.Stat(filePath)
+	if err != nil {
+		return "", err
+	}
+	if stats.IsDir() {
+		return ":) Please select a file", nil
+	}
+	data, err := os.ReadFile(filePath) // or os.ReadFile for Go 1.16+
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}

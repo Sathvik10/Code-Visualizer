@@ -6,12 +6,14 @@ import TidyTree from "./TidyTree";
 import CircularPacking from "./CirclePack";
 import Navbar from "./components/NavBar";
 import LintIssuesByLinter from "./LintIssueTracker";
+import LintingCodeViewer from "./LintingCodeViewer";
 
 
 const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
   const [treeStructureData, setTreeStructureData] = useState([]);
   const [fileChartData, setFileChartData] = useState([]);
+  const [fileContent1, setFileContent] = useState("Please select a file to view");
 
   const [repoURL, setRepoURL] = useState("");
   const [folderName, setFolderName] = useState("");
@@ -29,6 +31,21 @@ const Dashboard = () => {
   const apipath = localStorage.getItem("apipath");
 
   const navigate = useNavigate();
+
+  useEffect(()=>{
+    if (filepath.endsWith(".go")){
+      fetch(`http://localhost:8080/api/v1/filecontent/${projectName}?filepath=${apipath}`)
+      .then(res => res.json())
+      .then(res => {
+        setFileContent(res.response)
+      }).catch((err) => {
+        console.error("Error fetching stats:", err);
+        navigate("/");
+      })
+    }else{
+      setFileContent("Please select a file to view")
+    }
+  }, [filepath])
 
   // Fetch Git stats
   useEffect(() => {
@@ -135,6 +152,37 @@ const Dashboard = () => {
     setFilepath(combinedPath);
   };
 
+  const fileContent = `function helloWorld() {
+    console.log("Hello, world!");
+    const x = ;
+    return x;
+  }`;
+
+  const lintErrors = [
+    { line: 3, message: "Syntax error: Unexpected token" },
+    { line: 4, message: "Missing semicolon" }
+  ];
+
+  const getLintErrorsForFile = (lintIssues, filepath) => {
+    const lintErrors = []
+    if (!filepath.endsWith(".go")){
+      return lintErrors
+    }
+
+    const relativePath = getRelativePath(filepath)
+    lintIssues.forEach(li => {
+      if (li.Pos.Filename == relativePath){
+        lintErrors.push(
+          {
+            line : li.Pos.Line,
+            message : li.FromLinter + " : " + li.Text
+          }
+        )
+      }
+    })
+    return lintErrors
+  }
+
   const handleClone = async (event) => {
     event.preventDefault();
     setIsButtonDisabled(true);
@@ -207,36 +255,51 @@ const Dashboard = () => {
         setErrorMessage={setErrorMessage}
       />
       <div className="w-full h-screen overflow-x-auto">
-        <div className="flex gap-4 h-full w-[1800px]"> {/* Force total width wider than screen */}
-          
-          <div className="w-[600px] bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200">
+        <div className="flex h-full w-[2400px]">
+
+          {/* Fixed Tree Column */}
+          <div className="w-[600px] bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200 sticky left-0 z-10">
             <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
           </div>
 
-          <div className="w-[600px] flex flex-col gap-4 h-full">
-            <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
-              <PieChart data={fileChartData} title={"File-Level Contributions"} />
+          {/* Scrollable Content */}
+          <div className="flex gap-4 h-full w-[1800px] pl-4"> {/* Add left padding to offset sticky column */}
+            
+            <div className="w-[600px] flex flex-col gap-4 h-full">
+              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
+                <CircularPacking data={chartData} title={"Overall Contributions"} />
+              </div>
+              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
+                <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
+              </div>
             </div>
-            <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
-              <CircularPacking data={chartData} title={"Overall Contributions"} />
+
+            <div className="w-[600px] flex flex-col gap-4 h-full">
+              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
+                <PieChart data={fileChartData} title={"File-Level Contributions"} />
+              </div>
+              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
+                <LintIssuesByLinter 
+                  data={lintIssues} 
+                  title={`Lint issues in ${getRelativePath(filepath) ? getRelativePath(filepath) : "Repo"}`} 
+                  filterPath={getRelativePath(filepath)} 
+                  useBarChart={false} 
+                />
+              </div>
             </div>
+
+            {/* Column 3: Linting Code Viewer */}
+            <div className="w-[600px] flex flex-col gap-4 h-full">
+              <div className="bg-white rounded-2xl p-4 h-full overflow-auto border border-gray-200">
+                <h2 className="text-lg font-semibold mb-2">File Viewer</h2>
+                <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} />
+              </div>
+            </div>
+
           </div>
-
-          <div className="w-[600px] flex flex-col gap-4 h-full">
-            <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
-
-              <LintIssuesByLinter data={lintIssues} title={`Lint issues in ${getRelativePath(filepath)? getRelativePath(filepath): "Repo"}`} filterPath={getRelativePath(filepath)} useBarChart={false} />
-            </div>
-            <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
-              <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
-            </div>
-          </div>
-
         </div>
       </div>
     </>
-
-
   );
 };
 
