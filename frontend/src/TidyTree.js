@@ -109,9 +109,6 @@ const TidyTree = ({ data, onNodeClick }) => {
         if (d.x > right.x) right = d;
       });
 
-      const treeHeight = right.x - left.x + dx * 2;
-      const treeWidth = d3.max(nodes, (d) => d.y) + 100;
-
       svg.attr("viewBox", [0, 0, width, dimensions.height]);
 
       const node = gNode.selectAll("g").data(nodes, (d) => d.id);
@@ -231,10 +228,11 @@ const TidyTree = ({ data, onNodeClick }) => {
 
       // Only center on first render
       if (isFirstRender) {
-        const horizontalOffset = 200;
+        const horizontalOffset = 350;
+        const verticalOffset = 50;
         const initialTransform = d3.zoomIdentity.translate(
           width / 2 - root.y - horizontalOffset,
-          dimensions.height / 2 - root.x
+          dimensions.height / 2 - root.x - verticalOffset
         );
 
         svg
