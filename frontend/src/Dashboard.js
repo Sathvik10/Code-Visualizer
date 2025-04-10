@@ -4,42 +4,45 @@ import { useNavigate } from "react-router-dom";
 import "./DashboardPage.css";
 import TidyTree from "./TidyTree";
 import CircularPacking from "./CirclePack";
+import Navbar from "./components/NavBar";
 
 const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
   const [treeStructureData, setTreeStructureData] = useState([]);
-  const navigate = useNavigate();
   const [fileChartData, setFileChartData] = useState([]);
+
+  const [repoURL, setRepoURL] = useState("");
+  const [folderName, setFolderName] = useState("");
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   const projectName = localStorage.getItem("projectName");
-  // const filepath = localStorage.getItem("filepath");
   const [filepath, setFilepath] = useState(
     localStorage.getItem("filepath") || ""
   );
   const apipath = localStorage.getItem("apipath");
 
+  const navigate = useNavigate();
+
+  // Fetch Git stats
   useEffect(() => {
     fetch(`http://localhost:8080/api/v1/gitstats/${projectName}`)
       .then((res) => res.json())
       .then((json) => {
         const contributors = json.response.contributors;
 
-        // Combine contributors with same name/email
+        // Aggregate data
         const aggregated = {};
         contributors.forEach((c) => {
           const key = `${c.name}|${c.email}`;
           if (!aggregated[key]) {
-            aggregated[key] = {
-              name: c.name,
-              email: c.email,
-              count: 0,
-            };
+            aggregated[key] = { name: c.name, email: c.email, count: 0 };
           }
           aggregated[key].count += c.totalContributionPercentage;
         });
 
-        const data = Object.values(aggregated);
-        // console.log("Aggregated data:", data);
-        setChartData(data);
+        setChartData(Object.values(aggregated));
       })
       .catch((err) => {
         console.error("Error fetching stats:", err);
@@ -47,6 +50,7 @@ const Dashboard = () => {
       });
   }, [navigate, projectName]);
 
+  // Fetch Tree structure
   useEffect(() => {
     fetch(`http://localhost:8080/api/v1/treestructure/${projectName}`)
       .then((res) => res.json())
@@ -56,13 +60,11 @@ const Dashboard = () => {
             name: node.name || "root",
             path: node.path || "",
             children: (node.children || [])
-              .filter((child) => child.isDir || child.name) // optional filtering
+              .filter((child) => child.isDir || child.name)
               .map(buildTree),
           };
         };
-
-        const treeData = buildTree(json.response);
-        setTreeStructureData(treeData);
+        setTreeStructureData(buildTree(json.response));
       })
       .catch((err) => {
         console.error("Error fetching:", err);
@@ -70,6 +72,7 @@ const Dashboard = () => {
       });
   }, [navigate, projectName]);
 
+  // Fetch File stats
   useEffect(() => {
     fetch(
       `http://localhost:8080/api/v1/filestats/${projectName}?filepath=${apipath}`
@@ -77,34 +80,25 @@ const Dashboard = () => {
       .then((res) => res.json())
       .then((json) => {
         const contributors = json.response;
-
-        // Aggregate by name + email
         const aggregated = {};
         contributors.forEach((c) => {
           const key = `${c.name}|${c.email}`;
           if (!aggregated[key]) {
-            aggregated[key] = {
-              name: c.name,
-              email: c.email,
-              count: 0,
-            };
+            aggregated[key] = { name: c.name, email: c.email, count: 0 };
           }
           aggregated[key].count += c.totalContributionPercentage;
         });
 
-        const data = Object.values(aggregated);
-        // console.log("Aggregated data:", data);
-
-        setFileChartData(data);
+        setFileChartData(Object.values(aggregated));
       })
       .catch((err) => {
         console.error("Error fetching file-level contributions:", err);
       });
   }, [projectName, filepath, apipath]);
 
+  // Handle Node Click to Update Path
   const handleNodeClick = (clickedPath) => {
     const basePath = localStorage.getItem("filepath") || "";
-    // Make sure there's a `/` between them
     const combinedPath = basePath.endsWith("/")
       ? basePath + clickedPath
       : basePath + "/" + clickedPath;
@@ -113,23 +107,81 @@ const Dashboard = () => {
     setFilepath(combinedPath);
   };
 
-  return (
-    <div className="flex gap-4 h-screen">
-      <div className="w-3/5 bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200">
-        <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
-      </div>
+  // Handle Clone Logic for Navbar
+  const handleClone = async (event) => {
+    event.preventDefault();
+    setIsButtonDisabled(true);
+    setIsLoading(true);
+    setErrorMessage("");
 
-      <div className="w-2/5 flex flex-col gap-4 h-full">
-        <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
-          <PieChart data={fileChartData} title={"File-Level Contributions"} />
-          {/* <CircularPacking  data={fileChartData} title={"File-Level Contributions"} /> */}
+    try {
+      const res = await fetch("http://localhost:8080/api/v1/clone", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          repoURL: repoURL,
+          foldername: folderName,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      if (data.response === "Success") {
+        localStorage.setItem("projectName", data.name);
+        localStorage.setItem("filepath", data.filepath);
+        localStorage.setItem("apipath", data.filepath);
+        navigate("/dashboard");
+      } else {
+        setErrorMessage(
+          "Clone failed. Please check the repository and folder name."
+        );
+      }
+    } catch (error) {
+      setErrorMessage(
+        `Error Cloning: ${error.message} | Please check the repository and folder name.`
+      );
+    } finally {
+      setIsButtonDisabled(false);
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Navbar
+        repoURL={repoURL}
+        setRepoURL={setRepoURL}
+        folderName={folderName}
+        setFolderName={setFolderName}
+        handleClone={handleClone}
+        isLoading={isLoading}
+        isButtonDisabled={isButtonDisabled}
+        setIsButtonDisabled={setIsButtonDisabled}
+        setIsLoading={setIsLoading}
+        errorMessage={errorMessage}
+        setErrorMessage={setErrorMessage}
+      />
+      <div className="flex gap-4 h-screen">
+        <div className="w-3/5 bg-white p-4 h-full overflow-hidden border-r border-gray-200">
+          <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
         </div>
-        <div className="bg-white rounded-2xl  p-4 h-1/2 overflow-hidden border border-gray-200">
-          {/* <PieChart data={chartData} title={"Overall Contributions"} /> */}
-          <CircularPacking  data={chartData} title={"Overall Contributions"} />
+
+        <div className="w-2/5 flex flex-col gap-4 h-full">
+          <div className="bg-white p-4 h-1/2 overflow-hidden">
+            <PieChart data={fileChartData} title={"File-Level Contributions"} />
+          </div>
+          <div className="bg-white p-4 h-1/2 overflow-hidden">
+            <CircularPacking data={chartData} title={"Overall Contributions"} />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
