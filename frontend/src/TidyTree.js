@@ -11,9 +11,12 @@ const TidyTree = ({ data, onNodeClick }) => {
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
-      if (!entries.length) return;
-      const { width, height } = entries[0].contentRect;
-      setDimensions({ width, height });
+      requestAnimationFrame(()=>{
+        if (!entries.length) return;
+          const { width, height } = entries[0].contentRect;
+          setDimensions({ width, height });
+      })
+
     });
 
     if (wrapperRef.current) {

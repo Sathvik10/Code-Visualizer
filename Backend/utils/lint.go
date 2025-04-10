@@ -40,32 +40,30 @@ type LintIssues []LintIssue
 // RunGolangCILint executes golangci-lint on the specified repo path
 func RunGolangCILint(repoPath string) (LintIssues, error) {
 	// Prepare a temporary file for the JSON output
-	tempDir, err := os.MkdirTemp("", "golangcilint")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp directory: %w", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	outputFile := filepath.Join(tempDir, "lint-results.json")
+	outputFile := "lint-results.json"
 	CreateGolangCIConfig(repoPath, outputFile)
 
-	// Execute golangci-lint with JSON output
-	cmd := exec.Command(
-		"golangci-lint", "run",
-		"./...", // Check all packages in the module
-	)
-	cmd.Dir = repoPath
-	cmd.Stdout = os.Stdout // Show progress output
-	cmd.Stderr = os.Stderr
+	outputFile = filepath.Join(repoPath, outputFile)
+	_, err := os.Stat(outputFile)
+	if err != nil {
+		// Execute golangci-lint with JSON output
+		cmd := exec.Command(
+			"golangci-lint", "run",
+			"./...", // Check all packages in the module
+		)
+		cmd.Dir = repoPath
+		cmd.Stdout = os.Stdout // Show progress output
+		cmd.Stderr = os.Stderr
 
-	fmt.Println("Running golangci-lint. This may take a while...")
-	startTime := time.Now()
+		fmt.Println("Running golangci-lint. This may take a while...")
+		startTime := time.Now()
 
-	// Execute command (ignoring error as it returns non-zero when issues found)
-	_ = cmd.Run()
+		// Execute command (ignoring error as it returns non-zero when issues found)
+		_ = cmd.Run()
 
-	elapsedTime := time.Since(startTime)
-	fmt.Printf("golangci-lint completed in %.2f seconds\n", elapsedTime.Seconds())
+		elapsedTime := time.Since(startTime)
+		fmt.Printf("golangci-lint completed in %.2f seconds\n", elapsedTime.Seconds())
+	}
 
 	// Check if output file was created
 	if _, err := os.Stat(outputFile); os.IsNotExist(err) {
@@ -89,10 +87,6 @@ func RunGolangCILint(repoPath string) (LintIssues, error) {
 	}
 
 	// Print any warnings
-	for _, warning := range result.Report.Warnings {
-		fmt.Printf("Warning: %s\n", warning)
-	}
-
 	return result.Issues, nil
 }
 
@@ -139,6 +133,8 @@ func AnalyzeCodeWithGolangCILint(repoPath string) (LintIssues, error) {
 func CreateGolangCIConfig(repoPath, outputpath string) error {
 	configContent := fmt.Sprintf(`
 version: "2"
+linters:
+  default: all
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

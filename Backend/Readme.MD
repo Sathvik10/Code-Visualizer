@@ -13,3 +13,5 @@ Resp: {"filepath":"/Users/sathvikkote/Docs/Sathvik/Workspace/GitHub/go","name":"
 curl "http://localhost:8080/api/v1/gitstats/kote"
 
 curl "http://localhost:8080/api/v1/treestructure/kote"
+
+curl "http://localhost:8080/api/v1/lintissues/bzbmd"

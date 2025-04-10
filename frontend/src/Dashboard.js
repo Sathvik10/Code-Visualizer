@@ -5,6 +5,8 @@ import "./DashboardPage.css";
 import TidyTree from "./TidyTree";
 import CircularPacking from "./CirclePack";
 import Navbar from "./components/NavBar";
+import LintIssuesByLinter from "./LintIssueTracker";
+
 
 const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
@@ -16,6 +18,9 @@ const Dashboard = () => {
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const [lintIssues, setLintIssues] = useState([]);
+
 
   const projectName = localStorage.getItem("projectName");
   const [filepath, setFilepath] = useState(
@@ -37,7 +42,14 @@ const Dashboard = () => {
         contributors.forEach((c) => {
           const key = `${c.name}|${c.email}`;
           if (!aggregated[key]) {
-            aggregated[key] = { name: c.name, email: c.email, count: 0 };
+
+            aggregated[key] = {
+              name: c.name,
+              email: c.email,
+              count: 0,
+              measure : '%',
+
+            };
           }
           aggregated[key].count += c.totalContributionPercentage;
         });
@@ -70,7 +82,7 @@ const Dashboard = () => {
         console.error("Error fetching:", err);
         navigate("/");
       });
-  }, [navigate, projectName]);
+  }, [projectName]);
 
   // Fetch File stats
   useEffect(() => {
@@ -85,6 +97,12 @@ const Dashboard = () => {
           const key = `${c.name}|${c.email}`;
           if (!aggregated[key]) {
             aggregated[key] = { name: c.name, email: c.email, count: 0 };
+            aggregated[key] = {
+              name: c.name,
+              email: c.email,
+              count: 0,
+              measure : '%',
+            };
           }
           aggregated[key].count += c.totalContributionPercentage;
         });
@@ -96,7 +114,17 @@ const Dashboard = () => {
       });
   }, [projectName, filepath, apipath]);
 
-  // Handle Node Click to Update Path
+  useEffect(() => {
+    fetch(`http://localhost:8080/api/v1/lintissues/${projectName}`)
+    .then(res => res.json())
+    .then(res => {
+      setLintIssues(res.response)
+    }).catch((err) => {
+      console.error("Error fetching file-level contributions:", err);
+    });
+
+  },[navigate, filepath, projectName]);
+
   const handleNodeClick = (clickedPath) => {
     const basePath = localStorage.getItem("filepath") || "";
     const combinedPath = basePath.endsWith("/")
@@ -107,7 +135,6 @@ const Dashboard = () => {
     setFilepath(combinedPath);
   };
 
-  // Handle Clone Logic for Navbar
   const handleClone = async (event) => {
     event.preventDefault();
     setIsButtonDisabled(true);
@@ -152,6 +179,18 @@ const Dashboard = () => {
     }
   };
 
+  const getRelativePath = (filepath) => {
+    const basePath = localStorage.getItem("filepath") || "";
+    if (filepath == basePath)
+      return null
+
+    const relativePath = filepath.startsWith(basePath)
+      ? filepath.slice(basePath.length).replace(/^\\+|^\/+/, "")
+      : filepath;
+    return relativePath    
+  };
+
+
   return (
     <>
       <Navbar
@@ -167,21 +206,37 @@ const Dashboard = () => {
         errorMessage={errorMessage}
         setErrorMessage={setErrorMessage}
       />
-      <div className="flex gap-4 h-screen">
-        <div className="w-3/5 bg-white p-4 h-full overflow-hidden border-r border-gray-200">
-          <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
-        </div>
+      <div className="w-full h-screen overflow-x-auto">
+        <div className="flex gap-4 h-full w-[1800px]"> {/* Force total width wider than screen */}
+          
+          <div className="w-[600px] bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200">
+            <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
+          </div>
 
-        <div className="w-2/5 flex flex-col gap-4 h-full">
-          <div className="bg-white p-4 h-1/2 overflow-hidden">
-            <PieChart data={fileChartData} title={"File-Level Contributions"} />
+          <div className="w-[600px] flex flex-col gap-4 h-full">
+            <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
+              <PieChart data={fileChartData} title={"File-Level Contributions"} />
+            </div>
+            <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
+              <CircularPacking data={chartData} title={"Overall Contributions"} />
+            </div>
           </div>
-          <div className="bg-white p-4 h-1/2 overflow-hidden">
-            <CircularPacking data={chartData} title={"Overall Contributions"} />
+
+          <div className="w-[600px] flex flex-col gap-4 h-full">
+            <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
+
+              <LintIssuesByLinter data={lintIssues} title={`Lint issues in ${getRelativePath(filepath)? getRelativePath(filepath): "Repo"}`} filterPath={getRelativePath(filepath)} useBarChart={false} />
+            </div>
+            <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
+              <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
+            </div>
           </div>
+
         </div>
       </div>
     </>
+
+
   );
 };
 
