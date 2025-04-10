@@ -13,12 +13,6 @@ function App() {
 
   const handleClone = async (event) => {
     event.preventDefault();
-
-    // if (!repoURL || !folderName) {
-    //   setErrorMessage("Please enter both repo URL and folder name.");
-    //   return;
-    // }
-
     setIsButtonDisabled(true);
     setIsLoading(true);
     setErrorMessage("");
@@ -48,10 +42,14 @@ function App() {
         localStorage.setItem("apipath", data.filepath);
         navigate("/dashboard");
       } else {
-        setErrorMessage("Clone failed. Please check the repository and folder name.");
+        setErrorMessage(
+          "Clone failed. Please check the repository and folder name."
+        );
       }
     } catch (error) {
-      setErrorMessage(`Error cloning repo: ${error.message}`);
+      setErrorMessage(
+        `Error Cloning: ${error.message} | Please check the repository and folder name.`
+      );
     } finally {
       setIsButtonDisabled(false);
       setIsLoading(false);
@@ -76,7 +74,11 @@ function App() {
           value={folderName}
           onChange={(e) => setFolderName(e.target.value)}
         />
-        <button onClick={handleClone} disabled={isButtonDisabled}>
+        <button
+          id="home-button"
+          onClick={handleClone}
+          disabled={isButtonDisabled}
+        >
           {isLoading ? "Cloning..." : "Clone & Go"}
         </button>
       </form>
