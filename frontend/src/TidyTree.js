@@ -234,9 +234,10 @@ const TidyTree = ({ data, onNodeClick }) => {
         const horizontalOffset = 350;
         const verticalOffset = 50;
         const initialTransform = d3.zoomIdentity.translate(
-          width / 2 - root.y - horizontalOffset,
-          dimensions.height / 2 - root.x - verticalOffset
+          width / 6 - root.y,
+          dimensions.height / 2 - root.x
         );
+        ;
 
         svg
           .transition()
