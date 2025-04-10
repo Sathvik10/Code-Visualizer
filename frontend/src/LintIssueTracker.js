@@ -27,6 +27,9 @@ const LintIssuesByLinter = ({ data, title , filterPath = null, useBarChart = tru
   const containerRef = useRef();
 
   useEffect(() => {
+    if (!(Array.isArray(data) && data.length > 0)){
+        return
+    }
     if (svgRef.current && containerRef.current) {
         if (filterPath != null) {
             data = data.filter(d => d.Pos.Filename.startsWith(filterPath))

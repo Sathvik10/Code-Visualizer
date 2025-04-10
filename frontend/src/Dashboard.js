@@ -169,6 +169,10 @@ const Dashboard = () => {
       return lintErrors
     }
 
+    if (!(Array.isArray(lintIssues) && lintIssues.length > 0)){
+      return lintErrors
+    }
+
     const relativePath = getRelativePath(filepath)
     lintIssues.forEach(li => {
       if (li.Pos.Filename == relativePath){
