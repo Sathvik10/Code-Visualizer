@@ -13,8 +13,8 @@ import (
 type GolangCILintResult struct {
 	Issues []LintIssue `json:"Issues"`
 	Report struct {
-		Warnings []string `json:"Warnings"`
-		Error    string   `json:"Error"`
+		Warnings any    `json:"Warnings"`
+		Error    string `json:"Error"`
 	} `json:"Report"`
 }
 
