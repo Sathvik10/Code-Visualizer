@@ -1,10 +1,17 @@
 # Code Visualizer
 
+## Requirement: Golang and Node
 
-Programming Language requirements: GoLang
+Before starting this project, ensure that you have the Go linter installed.
 
-Before starting this project requires the Go Linter. Install the Golangci-lint from:
+### Step 1: Install `golangci-lint`
 
-https://golangci-lint.run/welcome/install/#local-installation
+Follow the official installation guide to install `golangci-lint` locally:  
+ [https://golangci-lint.run/welcome/install/#local-installation](https://golangci-lint.run/welcome/install/#local-installation)
 
-Run the bash script in the home directory `run.sh`
+### Step 2: Run the Project
+
+After installation, run the provided bash script from your home directory:
+
+```bash
+bash run.sh
