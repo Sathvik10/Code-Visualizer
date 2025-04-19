@@ -2,8 +2,10 @@ package logic
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"tbd.com/utils"
 )
@@ -41,7 +43,8 @@ func (p PackageHandler) addPackage(filePath, name string) (string, error) {
 	}
 
 	if _, ok := p.packages[name]; ok {
-		return "", errors.New("package name already in use. give another name")
+		return "Success", nil
+		// return "", errors.New("package name already in use. give another name")
 	}
 
 	pm, err := NewPackageManager(name, cleanPath)
@@ -110,20 +113,38 @@ func (p PackageHandler) GetCodeFlow(name, path, function string) (*utils.Functio
 	return p.packages[name].GetCodeFlow(path, function)
 }
 
-// CloneRepo
+// CloneRepo clones a GitHub repo into a local directory named after the username and repo name.
+// If the folder already exists, it assumes it's already cloned and returns successfully.
 func (p PackageHandler) CloneRepo(repoURL string) (string, error) {
 	// Get present working directory
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
-	// Create the directory for the package if it doesn't exist
-	packDir := filepath.Join("repos", utils.GenerateRandomAlphanumericString(5))
-	if _, err := os.Stat(packDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(packDir, os.ModePerm); err != nil {
-			return "", err
-		}
+
+	// Extract username and repo name from URL
+	trimmedURL := strings.TrimSuffix(repoURL, "/")
+	parts := strings.Split(trimmedURL, "/")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid repo URL: %s", repoURL)
 	}
+	username := parts[len(parts)-2]
+	repoName := parts[len(parts)-1]
+
+	// Create folder name
+	folderName := username + "-" + repoName
+	packDir := filepath.Join("repos", folderName)
+
+	if _, err := os.Stat(packDir); err == nil {
+		// Directory already exists, no need to clone
+		return packDir, nil
+	}
+
+	// Create the directory
+	if err := os.MkdirAll(packDir, os.ModePerm); err != nil {
+		return "", err
+	}
+
+	// Clone the repository
 	return packDir, utils.CloneRepo(repoURL, filepath.Join(cwd, packDir))
-	// return nil
 }
