@@ -276,7 +276,7 @@ const Dashboard = () => {
         setErrorMessage={setErrorMessage}
       />
       <div className="w-full flex h-screen overflow-x-auto">
-        <div className="flex h-full w-[2400px]">
+        <div className="flex h-full flex-grow">
 
           {/* Fixed Tree Column */}
           <div className="w-[600px] bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200 sticky left-0 z-10">
@@ -284,7 +284,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="flex h-full w-[2400px] overflow-auto">
+        <div className="flex h-full flex-grow overflow-auto">
           {/* Scrollable Content */}
           <div className="flex gap-4 h-full w-[1800px]">
 

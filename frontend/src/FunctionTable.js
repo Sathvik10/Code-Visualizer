@@ -1,6 +1,6 @@
 const FunctionTable = ({ functions = [], onFunctionClick, selectedFunction }) => {
     return (
-      <div className="w-full h-[calc(100vh-64px)] flex flex-col"> {/* Adjust height if needed */}
+        <div className="w-full flex flex-col h-full"> {/* Adjust height if needed */}
         <h2 className="text-lg font-semibold mb-2">File Functions</h2>
   
         <div className="overflow-auto flex-1 border border-gray-200 rounded-2xl">
