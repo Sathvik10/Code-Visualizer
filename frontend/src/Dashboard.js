@@ -275,39 +275,56 @@ const Dashboard = () => {
         errorMessage={errorMessage}
         setErrorMessage={setErrorMessage}
       />
-      <div className="w-full h-screen overflow-x-auto">
+      <div className="w-full flex h-screen overflow-x-auto">
         <div className="flex h-full w-[2400px]">
 
           {/* Fixed Tree Column */}
           <div className="w-[600px] bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200 sticky left-0 z-10">
             <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
           </div>
+        </div>
 
+        <div className="flex h-full w-[2400px] overflow-auto">
           {/* Scrollable Content */}
-          <div className="flex gap-4 h-full w-[1800px] pl-4"> {/* Add left padding to offset sticky column */}
-            <div className="w-[600px] flex flex-col gap-4 h-full">
-              <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-200">
+          <div className="flex gap-4 h-full w-[1800px]">
+
+            {/* Column 1 */}
+            <div className="w-[450px] flex flex-col gap-4 h-[1200px]">
+              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-1/2">
                 <FunctionTable 
                   functions={filepath.endsWith(".go") ? functions : []}
                   onFunctionClick={handleFunctionClick}
                   selectedFunction={selectedFunction}
                 />
               </div>
-            </div>
-            <div className="w-[600px] flex flex-col gap-4 h-full">
-              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
+              
+              <div className="flex flex-col gap-4 bg-white rounded-2xl p-4 h-1/4 overflow-hidden border border-gray-200">
                 <CircularPacking data={chartData} title={"Overall Contributions"} />
               </div>
-              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
-                <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
-              </div>
-            </div>
 
-            <div className="w-[600px] flex flex-col gap-4 h-full">
-              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
+              <div className="flex flex-col gap-4 bg-white rounded-2xl p-4 h-1/4 overflow-hidden border border-gray-200">
                 <PieChart data={fileChartData} title={"File-Level Contributions"} />
               </div>
-              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
+
+            </div>
+
+            {/* Column 2 */}
+            <div className="w-[450px] flex flex-col gap-4 h-[1200px]">
+
+              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-1/2">
+                {/* <FunctionTable 
+                  functions={filepath.endsWith(".go") ? functions : []}
+                  onFunctionClick={handleFunctionClick}
+                  selectedFunction={selectedFunction}
+                /> */}
+                <h2 className="text-lg font-semibold">Function Tree Flow</h2>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 h-1/4 overflow-hidden border border-gray-200">
+                <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 h-1/4 overflow-hidden border border-gray-200">
                 <LintIssuesByLinter 
                   data={lintIssues} 
                   title={`Lint issues in ${getRelativePath(filepath) ? getRelativePath(filepath) : "Repo"}`} 
@@ -317,14 +334,27 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Column 3: Linting Code Viewer */}
+            {/* Column 3 */}
+            <div className="w-[450px] flex flex-col gap-4 h-[1200px]">
+              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-auto border border-gray-200">
+                <h2 className="text-lg font-semibold mb-2">Function Description</h2>
+                {/* <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} /> */}
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-auto border border-gray-200">
+                <h2 className="text-lg font-semibold mb-2">File Viewer</h2>
+                <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} />
+              </div>
+              
+            </div>
+
+            {/* Column 3: Linting Code Viewer
             <div className="w-[600px] flex flex-col gap-4 h-full">
               <div className="bg-white rounded-2xl p-4 h-full overflow-auto border border-gray-200">
                 <h2 className="text-lg font-semibold mb-2">File Viewer</h2>
                 <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} />
               </div>
-            </div>
-
+            </div> */}
           </div>
         </div>
       </div>
