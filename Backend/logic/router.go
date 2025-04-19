@@ -244,6 +244,44 @@ func (r Router) getFileContent(c *gin.Context) {
 	})
 }
 
+func (r Router) getCodeFlow(c *gin.Context) {
+	name := c.Param("package")
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing path package parameter",
+		})
+		return
+	}
+	// Get the file path query parameter
+	filePath := c.Query("filepath")
+	// Check if the file path is provided
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing filepath query parameter",
+		})
+		return
+	}
+
+	function := c.Query("function")
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing filepath query parameter",
+		})
+		return
+	}
+
+	resp, err := r.packageHandler.GetCodeFlow(name, filePath, function)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"response": resp,
+	})
+}
+
 // getFileContributions
 func (r Router) getFileContributions(c *gin.Context) {
 
@@ -314,6 +352,8 @@ func SetupRouter() *gin.Engine {
 		v1.GET("/filestats/:package", r.getFileContributions)
 
 		v1.GET("/filecontent/:package", r.getFileContent)
+
+		v1.GET("/codeflow/:package", r.getCodeFlow)
 	}
 
 	return router

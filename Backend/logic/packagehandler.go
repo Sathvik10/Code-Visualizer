@@ -102,6 +102,14 @@ func (p PackageHandler) GetFileContent(name, filePath string) (string, error) {
 	return p.packages[name].GetFileContent(filePath)
 }
 
+// GetFileContent
+func (p PackageHandler) GetCodeFlow(name, path, function string) (*utils.FunctionNode, error) {
+	if _, ok := p.packages[name]; !ok {
+		return nil, errors.New("unknown package")
+	}
+	return p.packages[name].GetCodeFlow(path, function)
+}
+
 // CloneRepo
 func (p PackageHandler) CloneRepo(repoURL string) (string, error) {
 	// Get present working directory

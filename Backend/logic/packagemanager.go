@@ -71,6 +71,11 @@ func (p PackageManager) GetTreeStructure(depth int) DirectoryInfo {
 	return p.getDirectoryStructure(p.dirPath, p.dirPath, depth, 0)
 }
 
+func (p PackageManager) GetCodeFlow(path, function string) (*utils.FunctionNode, error) {
+	dir := filepath.Dir(path)
+	return utils.GetCodeFlow(dir, function)
+}
+
 // getDirectoryStructure recursively builds the directory structure
 func (p PackageManager) getDirectoryStructure(basePath, currentPath string, maxDepth, currentDepth int) DirectoryInfo {
 	info, err := os.Stat(currentPath)
