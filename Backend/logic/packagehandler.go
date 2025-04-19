@@ -8,16 +8,19 @@ import (
 	"tbd.com/utils"
 )
 
+// PackageHandler
 type PackageHandler struct {
 	packages map[string]PackageManager
 }
 
+// NewPackageHandler
 func NewPackageHandler() PackageHandler {
 	return PackageHandler{
 		packages: make(map[string]PackageManager),
 	}
 }
 
+// addPackage
 func (p PackageHandler) addPackage(filePath, name string) (string, error) {
 
 	// Validate the file path to prevent directory traversal attacks
@@ -51,6 +54,7 @@ func (p PackageHandler) addPackage(filePath, name string) (string, error) {
 	return "Success", nil
 }
 
+// GetTreeStructure
 func (p PackageHandler) GetTreeStructure(name string, depth int) (DirectoryInfo, error) {
 	if _, ok := p.packages[name]; !ok {
 		return DirectoryInfo{}, errors.New("unknown package")
@@ -58,6 +62,7 @@ func (p PackageHandler) GetTreeStructure(name string, depth int) (DirectoryInfo,
 	return p.packages[name].GetTreeStructure(depth), nil
 }
 
+// GetGitStats
 func (p PackageHandler) GetGitStats(name string) (utils.GitStats, error) {
 	if _, ok := p.packages[name]; !ok {
 		return utils.GitStats{}, errors.New("unknown package")
@@ -65,14 +70,15 @@ func (p PackageHandler) GetGitStats(name string) (utils.GitStats, error) {
 	return p.packages[name].GetGitStats(), nil
 }
 
+// GetLintIssues
 func (p PackageHandler) GetLintIssues(name string) (utils.LintIssues, error) {
 	if _, ok := p.packages[name]; !ok {
 		return utils.LintIssues{}, errors.New("unknown package")
-
 	}
 	return p.packages[name].GetLintIssues()
 }
 
+// FindFunctions
 func (p PackageHandler) FindFunctions(name, path string) ([]string, error) {
 	if _, ok := p.packages[name]; !ok {
 		return nil, errors.New("unknown package")
@@ -80,6 +86,7 @@ func (p PackageHandler) FindFunctions(name, path string) ([]string, error) {
 	return p.packages[name].FindFunctions(path)
 }
 
+// GetFileContributions
 func (p PackageHandler) GetFileContributions(name, filePath string) ([]utils.FileContributor, error) {
 	if _, ok := p.packages[name]; !ok {
 		return nil, errors.New("unknown package")
@@ -87,6 +94,7 @@ func (p PackageHandler) GetFileContributions(name, filePath string) ([]utils.Fil
 	return p.packages[name].GetFileContributions(filePath)
 }
 
+// GetFileContent
 func (p PackageHandler) GetFileContent(name, filePath string) (string, error) {
 	if _, ok := p.packages[name]; !ok {
 		return "", errors.New("unknown package")
@@ -94,6 +102,7 @@ func (p PackageHandler) GetFileContent(name, filePath string) (string, error) {
 	return p.packages[name].GetFileContent(filePath)
 }
 
+// CloneRepo
 func (p PackageHandler) CloneRepo(repoURL string) (string, error) {
 	// Get present working directory
 	cwd, err := os.Getwd()
