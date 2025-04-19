@@ -7,6 +7,7 @@ import CircularPacking from "./CirclePack";
 import Navbar from "./components/NavBar";
 import LintIssuesByLinter from "./LintIssueTracker";
 import LintingCodeViewer from "./LintingCodeViewer";
+import FunctionTable from "./FunctionTable";
 
 
 const Dashboard = () => {
@@ -22,6 +23,11 @@ const Dashboard = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   const [lintIssues, setLintIssues] = useState([]);
+
+  // for the functions api
+  const [functions, setFunctions] = useState([]);
+  // for the codeflow api
+  const [selectedFunction, setSelectedFunction] = useState(null);
 
 
   const projectName = localStorage.getItem("projectName");
@@ -142,6 +148,22 @@ const Dashboard = () => {
 
   },[navigate, filepath, projectName]);
 
+  // Fetch function list when a Go file is selected
+  useEffect(() => {
+    if (filepath.endsWith(".go")) {
+      fetch(`http://localhost:8080/api/v1/functions/${projectName}?filepath=${apipath}`)
+        .then(res => res.json())
+        .then(data => {
+          setFunctions(data.response || []);
+        })
+        .catch(err => {
+          console.error("Error fetching functions:", err);
+        });
+    } else {
+      setFunctions([]);
+    }
+  }, [filepath, projectName, apipath]);
+
   const handleNodeClick = (clickedPath) => {
     const basePath = localStorage.getItem("filepath") || "";
     const combinedPath = basePath.endsWith("/")
@@ -152,16 +174,11 @@ const Dashboard = () => {
     setFilepath(combinedPath);
   };
 
-  const fileContent = `function helloWorld() {
-    console.log("Hello, world!");
-    const x = ;
-    return x;
-  }`;
-
-  const lintErrors = [
-    { line: 3, message: "Syntax error: Unexpected token" },
-    { line: 4, message: "Missing semicolon" }
-  ];
+  const handleFunctionClick = (functionName) => {
+    localStorage.setItem("functionname", functionName);
+    setSelectedFunction(functionName);
+    console.log("Function clicked:", functionName);
+  };
 
   const getLintErrorsForFile = (lintIssues, filepath) => {
     const lintErrors = []
@@ -268,7 +285,15 @@ const Dashboard = () => {
 
           {/* Scrollable Content */}
           <div className="flex gap-4 h-full w-[1800px] pl-4"> {/* Add left padding to offset sticky column */}
-            
+            <div className="w-[600px] flex flex-col gap-4 h-full">
+              <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-200">
+                <FunctionTable 
+                  functions={filepath.endsWith(".go") ? functions : []}
+                  onFunctionClick={handleFunctionClick}
+                  selectedFunction={selectedFunction}
+                />
+              </div>
+            </div>
             <div className="w-[600px] flex flex-col gap-4 h-full">
               <div className="bg-white rounded-2xl p-4 h-1/2 overflow-hidden border border-gray-200">
                 <CircularPacking data={chartData} title={"Overall Contributions"} />

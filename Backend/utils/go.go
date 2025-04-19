@@ -130,6 +130,11 @@ func ValidateGoProject(cleanPath string) GoProjectInfo {
 
 // FindFunctions extracts all function names from a Go file or directory
 func FindFunctions(path string) ([]string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	path = filepath.Join(cwd, path)
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return nil, fmt.Errorf("error accessing path %s: %w", path, err)
