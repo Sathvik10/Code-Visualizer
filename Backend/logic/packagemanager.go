@@ -53,6 +53,7 @@ type DirectoryInfo struct {
 	Children []DirectoryInfo `json:"children,omitempty"`
 }
 
+// NewPackageManager
 func NewPackageManager(name, dirPath string) (PackageManager, error) {
 	projectInfo := utils.ValidateGoProject(dirPath)
 	if !projectInfo.IsGoProject {
@@ -65,8 +66,14 @@ func NewPackageManager(name, dirPath string) (PackageManager, error) {
 	}, nil
 }
 
+// GetTreeStructure
 func (p PackageManager) GetTreeStructure(depth int) DirectoryInfo {
 	return p.getDirectoryStructure(p.dirPath, p.dirPath, depth, 0)
+}
+
+func (p PackageManager) GetCodeFlow(path, function string) (*utils.FunctionNode, error) {
+	dir := filepath.Dir(path)
+	return utils.GetCodeFlow(dir, function)
 }
 
 // getDirectoryStructure recursively builds the directory structure
@@ -115,6 +122,7 @@ func (p PackageManager) getDirectoryStructure(basePath, currentPath string, maxD
 	return dirInfo
 }
 
+// shouldIgnore
 func (p PackageManager) shouldIgnore(name string, ignorePatterns []string) bool {
 	for _, pattern := range ignorePatterns {
 		// Handle wildcard patterns
@@ -130,26 +138,32 @@ func (p PackageManager) shouldIgnore(name string, ignorePatterns []string) bool 
 	return false
 }
 
+// GetGitStats
 func (p PackageManager) GetGitStats() utils.GitStats {
 	return utils.GetGitStats(p.dirPath)
 }
 
+// GetLintIssues
 func (p PackageManager) GetLintIssues() (utils.LintIssues, error) {
 	return utils.AnalyzeCodeWithGolangCILint(p.dirPath)
 }
 
+// FindFunctions
 func (p PackageManager) FindFunctions(path string) ([]string, error) {
 	return utils.FindFunctions(path)
 }
 
+// CloneRepo
 func (p PackageManager) CloneRepo(url, branch string) error {
 	return utils.CloneRepo(url, p.dirPath)
 }
 
+// GetFileContributions
 func (p PackageManager) GetFileContributions(filePath string) ([]utils.FileContributor, error) {
 	return utils.GetFileContributions(p.dirPath, filePath)
 }
 
+// GetFileContent
 func (p PackageManager) GetFileContent(filePath string) (string, error) {
 	stats, err := os.Stat(filePath)
 	if err != nil {
