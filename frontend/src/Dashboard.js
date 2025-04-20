@@ -41,7 +41,7 @@ const Dashboard = () => {
 
   useEffect(()=>{
     if (filepath.endsWith(".go")){
-      fetch(`http://localhost:8080/api/v1/filecontent/${projectName}?filepath=${apipath}`)
+      fetch(`http://code-visualizer-3067797be701.herokuapp.com/api/v1/filecontent/${projectName}?filepath=${apipath}`)
       .then(res => res.json())
       .then(res => {
         setFileContent(res.response)
@@ -56,7 +56,7 @@ const Dashboard = () => {
 
   // Fetch Git stats
   useEffect(() => {
-    fetch(`http://localhost:8080/api/v1/gitstats/${projectName}`)
+    fetch(`http://code-visualizer-3067797be701.herokuapp.com/api/v1/gitstats/${projectName}`)
       .then((res) => res.json())
       .then((json) => {
         const contributors = json.response.contributors;
@@ -88,7 +88,7 @@ const Dashboard = () => {
 
   // Fetch Tree structure
   useEffect(() => {
-    fetch(`http://localhost:8080/api/v1/treestructure/${projectName}`)
+    fetch(`http://code-visualizer-3067797be701.herokuapp.com/api/v1/treestructure/${projectName}`)
       .then((res) => res.json())
       .then((json) => {
         const buildTree = (node) => {
@@ -113,7 +113,7 @@ const Dashboard = () => {
   useEffect(() => {
 	if (!shouldFetchFlow || !selectedFunction) return;
   
-	fetch(`http://localhost:8080/api/v1/codeflow/${projectName}?filepath=${apipath}&function=${selectedFunction}`)
+	fetch(`http://code-visualizer-3067797be701.herokuapp.com/api/v1/codeflow/${projectName}?filepath=${apipath}&function=${selectedFunction}`)
 	  .then((res) => res.json())
 	  .then((json) => {
 		const transformCodeFlowToTree = (node) => {
@@ -140,7 +140,7 @@ const Dashboard = () => {
   // Fetch File stats
   useEffect(() => {
     fetch(
-      `http://localhost:8080/api/v1/filestats/${projectName}?filepath=${apipath}`
+      `http://code-visualizer-3067797be701.herokuapp.com/api/v1/filestats/${projectName}?filepath=${apipath}`
     )
       .then((res) => res.json())
       .then((json) => {
@@ -168,7 +168,7 @@ const Dashboard = () => {
   }, [projectName, filepath, apipath]);
 
   useEffect(() => {
-    fetch(`http://localhost:8080/api/v1/lintissues/${projectName}`)
+    fetch(`http://code-visualizer-3067797be701.herokuapp.com/api/v1/lintissues/${projectName}`)
     .then(res => res.json())
     .then(res => {
       setLintIssues(res.response)
@@ -181,7 +181,7 @@ const Dashboard = () => {
   // Fetch function list when a Go file is selected
   useEffect(() => {
     if (filepath.endsWith(".go")) {
-      fetch(`http://localhost:8080/api/v1/functions/${projectName}?filepath=${apipath}`)
+      fetch(`http://code-visualizer-3067797be701.herokuapp.com/api/v1/functions/${projectName}?filepath=${apipath}`)
         .then(res => res.json())
         .then(data => {
           setFunctions(data.response || []);
@@ -251,7 +251,7 @@ const Dashboard = () => {
     setErrorMessage("");
 
     try {
-      const res = await fetch("http://localhost:8080/api/v1/clone", {
+      const res = await fetch("http://code-visualizer-3067797be701.herokuapp.com/api/v1/clone", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
