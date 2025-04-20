@@ -229,18 +229,19 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
       });
 
       // Only center on first render
+      let initialScale = 0.7;
       if (isFirstRender) {
         let initialTransform;
         if (!isCodeFlow){
           initialTransform = d3.zoomIdentity.translate(
             width / 6 - root.y,
             dimensions.height / 2.3 - root.x
-          );
+          ).scale(initialScale);;
         } else {
           initialTransform = d3.zoomIdentity.translate(
             width / 4 - root.y,
             dimensions.height / 3.7 - root.x
-          );
+          ).scale(initialScale);;
         }
 
         svg

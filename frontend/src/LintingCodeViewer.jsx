@@ -10,7 +10,7 @@ const LintingCodeViewer = ({ fileContent, lintErrors }) => {
   }, {});
 
   return (
-    <div className="bg-gray-900 text-white rounded-lg overflow-auto text-sm font-mono h-full w-full shadow-lg border border-gray-700">
+    <div className="bg-gray-900 text-white rounded-lg overflow-auto text-[10px] font-mono h-full w-full shadow-lg border border-gray-700">
       <div className="min-w-full flex flex-col relative">
         {lines.map((line, index) => {
           const lineNumber = index + 1;
@@ -19,7 +19,7 @@ const LintingCodeViewer = ({ fileContent, lintErrors }) => {
           return (
             <div
               key={index}
-              className={`group relative flex items-start px-4 py-1 whitespace-pre ${
+              className={`group relative flex items-start px-3 py-0.5 whitespace-pre ${
                 errorMessage ? 'bg-red-800/30' : 'bg-gray-900'
               } border-b border-gray-800`}
             >
@@ -28,7 +28,7 @@ const LintingCodeViewer = ({ fileContent, lintErrors }) => {
             {/* Tooltip near line number */}
               {errorMessage && (
                 <div className="absolute right-0 ml-2 hidden group-hover:block z-20">
-                  <div className="bg-red-700 text-white text-xs rounded px-2 py-1 shadow-lg max-w-xs whitespace-normal">
+                  <div className="bg-red-700 text-white text-[10px] rounded px-2 py-1 shadow-lg max-w-xs whitespace-normal">
                     {errorMessage}
                   </div>
                 </div>

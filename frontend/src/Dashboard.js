@@ -317,64 +317,54 @@ const Dashboard = () => {
           setErrorMessage={setErrorMessage}
         />
       </div>
-      
-      <div className="w-full flex h-screen overflow-x-auto pt-16">
-        <div className="flex h-full flex-grow">
 
-          {/* Fixed Tree Column */}
-          <div className="w-[600px] bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200 sticky left-0 z-10">
-            <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
-          </div>
+      <div className="w-full h-screen pt-16 flex overflow-hidden">
+        {/* Fixed Tree Column */}
+        <div className="w-1/4 bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200 sticky left-0 z-10">
+          <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
         </div>
 
-        <div className="flex h-full flex-grow overflow-auto">
-          {/* Scrollable Content */}
-          <div className="flex gap-4 h-full w-[1800px]">
-
+        {/* Scrollable Content Area */}
+        <div className="w-3/4 h-full overflow-y-auto">
+          <div className="flex gap-4 p-4 w-full">
             {/* Column 1 */}
-            <div className="w-[450px] flex flex-col gap-4 h-[1200px]">
-              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-1/2">
+            <div className="w-1/3 flex flex-col gap-4">
+              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px]">
                 <FunctionTable 
                   functions={filepath.endsWith(".go") ? functions : []}
                   onFunctionClick={handleFunctionClick}
                   selectedFunction={selectedFunction}
                 />
               </div>
-              
-              <div className="flex flex-col gap-4 bg-white rounded-2xl p-4 h-1/4 overflow-hidden border border-gray-200">
+              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
                 <CircularPacking data={chartData} title={"Overall Contributions"} />
               </div>
-
-              <div className="flex flex-col gap-4 bg-white rounded-2xl p-4 h-1/4 overflow-hidden border border-gray-200">
+              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
                 <PieChart data={fileChartData} title={"File-Level Contributions"} />
               </div>
-
             </div>
 
             {/* Column 2 */}
-            <div className="w-[450px] flex flex-col gap-4 h-[1200px]">
-
-              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-1/2">
+            <div className="w-1/3 flex flex-col gap-4">
+              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px]">
                 <h2 className="text-lg font-semibold">Function Tree Flow</h2>
-                  <div className="w-full h-full overflow-hidden">
-                    {codeFlowTree === null ? (
-                      <div className="flex items-center justify-center h-full">
-                        <p className="text-gray-500">Select a function to view its flow</p>
-                      </div>
-                    ) : (
-                      <TidyTree data={codeFlowTree} isCodeFlow={true} />
-                    )}
-                  </div>
+                <div className="w-full h-full overflow-hidden">
+                  {codeFlowTree === null ? (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-gray-500">Select a function to view its flow</p>
+                    </div>
+                  ) : (
+                    <TidyTree data={codeFlowTree} isCodeFlow={true} />
+                  )}
+                </div>
               </div>
-              
-              <div className="bg-white rounded-2xl p-4 h-1/4 overflow-hidden border border-gray-200">
+              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
                 <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
               </div>
-
-              <div className="bg-white rounded-2xl p-4 h-1/4 overflow-hidden border border-gray-200">
+              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
                 <LintIssuesByLinter 
                   data={lintIssues} 
-                  title={`Lint issues in ${getRelativePath(filepath) ? getRelativePath(filepath) : "Repo"}`} 
+                  title={`Lint issues in ${getRelativePath(filepath) || "Repo"}`} 
                   filterPath={getRelativePath(filepath)} 
                   useBarChart={false} 
                 />
@@ -382,26 +372,16 @@ const Dashboard = () => {
             </div>
 
             {/* Column 3 */}
-            <div className="w-[450px] flex flex-col gap-4 h-[1200px]">
-              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-auto border border-gray-200">
+            <div className="w-1/3 flex flex-col gap-4">
+              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px] overflow-auto">
                 <h2 className="text-lg font-semibold mb-2">Function Description</h2>
-                {/* <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} /> */}
+                {/* Optional content here */}
               </div>
-
-              <div className="bg-white rounded-2xl p-4 h-1/2 overflow-auto border border-gray-200">
+              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px] overflow-auto">
                 <h2 className="text-lg font-semibold mb-2">File Viewer</h2>
                 <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} />
               </div>
-              
             </div>
-
-            {/* Column 3: Linting Code Viewer
-            <div className="w-[600px] flex flex-col gap-4 h-full">
-              <div className="bg-white rounded-2xl p-4 h-full overflow-auto border border-gray-200">
-                <h2 className="text-lg font-semibold mb-2">File Viewer</h2>
-                <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} />
-              </div>
-            </div> */}
           </div>
         </div>
       </div>
