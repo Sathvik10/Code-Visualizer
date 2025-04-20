@@ -58,43 +58,39 @@ function App() {
   };
 
   return (
-    <div id="main" className="flex flex-col h-screen overflow-hidden">
-      <h1 className="text-2xl font-bold p-4 sticky top-0 bg-white z-10 border-b">Code Visualizer</h1>
+    <div id="main">
+      <h1>Code Visualizer</h1>
+      <form>
+        <input
+          className="input"
+          type="text"
+          placeholder="Repository URL"
+          value={repoURL}
+          onChange={(e) => setRepoURL(e.target.value)}
+        />
+        <input
+          className="input"
+          type="text"
+          placeholder="Folder Name"
+          value={folderName}
+          onChange={(e) => setFolderName(e.target.value)}
+        />
+        <button
+          id="home-button"
+          onClick={handleClone}
+          disabled={isButtonDisabled}
+        >
+          {isLoading ? "Cloning..." : "Clone & Go"}
+        </button>
+      </form>
 
-      <div className="overflow-auto flex-1 p-4">
-        <form className="space-y-4">
-          <input
-            className="input"
-            type="text"
-            placeholder="Repository URL"
-            value={repoURL}
-            onChange={(e) => setRepoURL(e.target.value)}
-          />
-          <input
-            className="input"
-            type="text"
-            placeholder="Folder Name"
-            value={folderName}
-            onChange={(e) => setFolderName(e.target.value)}
-          />
-          <button
-            id="home-button"
-            onClick={handleClone}
-            disabled={isButtonDisabled}
-          >
-            {isLoading ? "Cloning..." : "Clone & Go"}
-          </button>
-        </form>
-
-        {errorMessage && (
-          <ErrorMessage
-            message={errorMessage}
-            onClose={() => setErrorMessage("")}
-          />
-        )}
-      </div>
+      {errorMessage && (
+        <ErrorMessage
+          message={errorMessage}
+          onClose={() => setErrorMessage("")}
+        />
+      )}
     </div>
-
   );
 }
 
