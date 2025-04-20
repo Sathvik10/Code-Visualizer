@@ -297,20 +297,23 @@ const Dashboard = () => {
 
   return (
     <>
-      <Navbar
-        repoURL={repoURL}
-        setRepoURL={setRepoURL}
-        folderName={folderName}
-        setFolderName={setFolderName}
-        handleClone={handleClone}
-        isLoading={isLoading}
-        isButtonDisabled={isButtonDisabled}
-        setIsButtonDisabled={setIsButtonDisabled}
-        setIsLoading={setIsLoading}
-        errorMessage={errorMessage}
-        setErrorMessage={setErrorMessage}
-      />
-      <div className="w-full flex h-screen overflow-x-auto">
+      <div className="fixed top-0 left-0 w-full bg-white z-50 shadow h-16 flex items-center px-6">
+        <Navbar
+          repoURL={repoURL}
+          setRepoURL={setRepoURL}
+          folderName={folderName}
+          setFolderName={setFolderName}
+          handleClone={handleClone}
+          isLoading={isLoading}
+          isButtonDisabled={isButtonDisabled}
+          setIsButtonDisabled={setIsButtonDisabled}
+          setIsLoading={setIsLoading}
+          errorMessage={errorMessage}
+          setErrorMessage={setErrorMessage}
+        />
+      </div>
+      
+      <div className="w-full flex h-screen overflow-x-auto pt-16">
         <div className="flex h-full flex-grow">
 
           {/* Fixed Tree Column */}
