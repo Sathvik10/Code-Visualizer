@@ -16,7 +16,6 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
           const { width, height } = entries[0].contentRect;
           setDimensions({ width, height });
       })
-
     });
 
     if (wrapperRef.current) {
@@ -231,17 +230,18 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
 
       // Only center on first render
       if (isFirstRender) {
-		let initialTransform;
+        let initialTransform;
         if (!isCodeFlow){
-			initialTransform = d3.zoomIdentity.translate(
-          width / 6 - root.y,
-          dimensions.height / 2.3 - root.x
-        );} else {
-			initialTransform = d3.zoomIdentity.translate(
-				width / 4 - root.y,
-				dimensions.height / 3.7 - root.x
-			  );
-		}
+          initialTransform = d3.zoomIdentity.translate(
+            width / 6 - root.y,
+            dimensions.height / 2.3 - root.x
+          );
+        } else {
+          initialTransform = d3.zoomIdentity.translate(
+            width / 4 - root.y,
+            dimensions.height / 3.7 - root.x
+          );
+        }
 
         svg
           .transition()
@@ -263,10 +263,17 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
     update(null, root);
   }, [data, dimensions]);
 
+  // In TidyTree.jsx
   return (
     <div
       ref={wrapperRef}
-      style={{ width: "100%", height: "100vh", overflow: "hidden" }}
+      style={{ 
+        width: "100%", 
+        height: "100%", 
+        maxHeight: "100%",
+        overflow: "hidden",
+        position: "relative" 
+      }}
     >
       <svg
         ref={svgRef}
@@ -276,6 +283,9 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
           display: "block",
           cursor: "grab",
           userSelect: "none",
+          position: "absolute",
+          top: 0,
+          left: 0
         }}
       />
     </div>

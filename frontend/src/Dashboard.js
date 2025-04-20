@@ -205,13 +205,18 @@ const Dashboard = () => {
 
     localStorage.setItem("apipath", combinedPath);
     setFilepath(combinedPath);
+    // clear the function table and code flow tree when you click a new file
+    localStorage.setItem("functionname", "");
+    setSelectedFunction(null);
+    setCodeFlowTree(null);
+    
   };
 
   const handleFunctionClick = (functionName) => {
-	localStorage.setItem("functionname", functionName);
-	setSelectedFunction(functionName);
-	setShouldFetchFlow(true); 
-	console.log("Function clicked:", functionName);
+    localStorage.setItem("functionname", functionName);
+    setSelectedFunction(functionName);
+    setShouldFetchFlow(true); 
+    console.log("Function clicked:", functionName);
   };
   
 
@@ -351,11 +356,17 @@ const Dashboard = () => {
 
               <div className="bg-white rounded-2xl p-4 border border-gray-200 h-1/2">
                 <h2 className="text-lg font-semibold">Function Tree Flow</h2>
-				<div className="w-full h-full overflow-hidden">
-    <TidyTree data={codeFlowTree} isCodeFlow={true} />
-  </div>
+                  <div className="w-full h-full overflow-hidden">
+                    {codeFlowTree === null ? (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-gray-500">Select a function to view its flow</p>
+                      </div>
+                    ) : (
+                      <TidyTree data={codeFlowTree} isCodeFlow={true} />
+                    )}
+                  </div>
               </div>
-
+              
               <div className="bg-white rounded-2xl p-4 h-1/4 overflow-hidden border border-gray-200">
                 <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
               </div>
