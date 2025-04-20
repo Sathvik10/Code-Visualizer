@@ -9,7 +9,6 @@ import LintIssuesByLinter from "./LintIssueTracker";
 import LintingCodeViewer from "./LintingCodeViewer";
 import FunctionTable from "./FunctionTable";
 
-
 const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
   const [treeStructureData, setTreeStructureData] = useState([]);
@@ -26,9 +25,11 @@ const Dashboard = () => {
 
   // for the functions api
   const [functions, setFunctions] = useState([]);
+  
   // for the codeflow api
   const [selectedFunction, setSelectedFunction] = useState(null);
-
+  const [codeFlowTree, setCodeFlowTree] = useState(null);
+  const [shouldFetchFlow, setShouldFetchFlow] = useState(false);
 
   const projectName = localStorage.getItem("projectName");
   const [filepath, setFilepath] = useState(
@@ -107,6 +108,35 @@ const Dashboard = () => {
       });
   }, [projectName]);
 
+
+  // Fetch Code Flow
+  useEffect(() => {
+	if (!shouldFetchFlow || !selectedFunction) return;
+  
+	fetch(`http://localhost:8080/api/v1/codeflow/${projectName}?filepath=${apipath}&function=${selectedFunction}`)
+	  .then((res) => res.json())
+	  .then((json) => {
+		const transformCodeFlowToTree = (node) => {
+			if (!node) return null;
+		  
+			return {
+			  name: node.Name || "Unnamed",
+			  path: `${node.File}:${node.Line}`,
+			  children: (node.Children || []).map(transformCodeFlowToTree),
+			};
+		  };
+
+		setCodeFlowTree(transformCodeFlowToTree(json.response)); // store tree root
+		setShouldFetchFlow(false);
+	  })
+	  .catch((err) => {
+		console.error("Error fetching Code Flow:", err);
+		setShouldFetchFlow(false);
+	  });
+  }, [shouldFetchFlow, projectName, apipath, selectedFunction]);
+  
+  
+
   // Fetch File stats
   useEffect(() => {
     fetch(
@@ -155,12 +185,15 @@ const Dashboard = () => {
         .then(res => res.json())
         .then(data => {
           setFunctions(data.response || []);
+		  setSelectedFunction(null);
         })
         .catch(err => {
           console.error("Error fetching functions:", err);
         });
     } else {
       setFunctions([]);
+	  setSelectedFunction(null);
+	  setCodeFlowTree(null)
     }
   }, [filepath, projectName, apipath]);
 
@@ -175,10 +208,12 @@ const Dashboard = () => {
   };
 
   const handleFunctionClick = (functionName) => {
-    localStorage.setItem("functionname", functionName);
-    setSelectedFunction(functionName);
-    console.log("Function clicked:", functionName);
+	localStorage.setItem("functionname", functionName);
+	setSelectedFunction(functionName);
+	setShouldFetchFlow(true); 
+	console.log("Function clicked:", functionName);
   };
+  
 
   const getLintErrorsForFile = (lintIssues, filepath) => {
     const lintErrors = []
@@ -312,12 +347,10 @@ const Dashboard = () => {
             <div className="w-[450px] flex flex-col gap-4 h-[1200px]">
 
               <div className="bg-white rounded-2xl p-4 border border-gray-200 h-1/2">
-                {/* <FunctionTable 
-                  functions={filepath.endsWith(".go") ? functions : []}
-                  onFunctionClick={handleFunctionClick}
-                  selectedFunction={selectedFunction}
-                /> */}
                 <h2 className="text-lg font-semibold">Function Tree Flow</h2>
+				<div className="w-full h-full overflow-hidden">
+    <TidyTree data={codeFlowTree} isCodeFlow={true} />
+  </div>
               </div>
 
               <div className="bg-white rounded-2xl p-4 h-1/4 overflow-hidden border border-gray-200">

@@ -244,6 +244,7 @@ func (r Router) getFileContent(c *gin.Context) {
 	})
 }
 
+// getCodeFlow
 func (r Router) getCodeFlow(c *gin.Context) {
 	name := c.Param("package")
 	if name == "" {
@@ -263,9 +264,9 @@ func (r Router) getCodeFlow(c *gin.Context) {
 	}
 
 	function := c.Query("function")
-	if filePath == "" {
+	if function == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Missing filepath query parameter",
+			"error": "Missing function query parameter",
 		})
 		return
 	}

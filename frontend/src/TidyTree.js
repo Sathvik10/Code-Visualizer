@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
 
-const TidyTree = ({ data, onNodeClick }) => {
+const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
   const svgRef = useRef();
   const wrapperRef = useRef();
   const zoomRef = useRef();
@@ -231,13 +231,17 @@ const TidyTree = ({ data, onNodeClick }) => {
 
       // Only center on first render
       if (isFirstRender) {
-        const horizontalOffset = 350;
-        const verticalOffset = 50;
-        const initialTransform = d3.zoomIdentity.translate(
+		let initialTransform;
+        if (!isCodeFlow){
+			initialTransform = d3.zoomIdentity.translate(
           width / 6 - root.y,
-          dimensions.height / 2 - root.x
-        );
-        ;
+          dimensions.height / 2.3 - root.x
+        );} else {
+			initialTransform = d3.zoomIdentity.translate(
+				width / 4 - root.y,
+				dimensions.height / 3.7 - root.x
+			  );
+		}
 
         svg
           .transition()
