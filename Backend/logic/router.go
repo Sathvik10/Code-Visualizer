@@ -322,7 +322,7 @@ func SetupRouter() *gin.Engine {
 
 	// Add CORS middleware
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     []string{"http://localhost:3000", "http://172.31.129.234:3000"},
 		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},

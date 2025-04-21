@@ -18,7 +18,7 @@ function App() {
     setErrorMessage("");
 
     try {
-      const res = await fetch("http://localhost:8080/api/v1/clone", {
+      const res = await fetch("http://172.31.129.234:8080/api/v1/clone", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
