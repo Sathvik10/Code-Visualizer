@@ -272,7 +272,8 @@ const Dashboard = () => {
         localStorage.setItem("projectName", data.name);
         localStorage.setItem("filepath", data.filepath);
         localStorage.setItem("apipath", data.filepath);
-        navigate("/dashboard");
+        // navigate("/dashboard");
+        window.location.reload();
       } else {
         setErrorMessage(
           "Clone failed. Please check the repository and folder name."
