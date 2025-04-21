@@ -428,44 +428,35 @@ const Dashboard = () => {
 					errorMessage={errorMessage}
 					setErrorMessage={setErrorMessage}
 				/>
-				{/* ───── View Mode Toggle ───── */}
+				 {/* View Mode Toggle */}
 				<div className="flex items-center px-6 py-3">
-					{/* Left label */}
-					<span className="text-gray-700 mr-3 select-none">
-						Stats
-					</span>
-
-					{/* The switch */}
-					<label className="relative inline-flex items-center cursor-pointer">
-						<input
-							type="checkbox"
-							className="sr-only peer"
-							checked={viewMode === "explorer"}
-							onChange={() =>
-								setViewMode(
-									viewMode === "stats" ? "explorer" : "stats"
-								)
-							}
-						/>
-						<div
-							className="
-		w-11 h-6 rounded-full
-		bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300
-		peer-checked:bg-blue-600
-		transition-colors duration-200
-		relative
-		after:content-[''] after:absolute after:top-0.5 after:left-[2px]
-		after:bg-white after:rounded-full
-		after:h-5 after:w-5 after:transition-transform
-		peer-checked:after:translate-x-full
-  "
-						/>
-					</label>
-
-					{/* Right label */}
-					<span className="text-gray-700 ml-3 select-none">
-						Explorer
-					</span>
+					<span className="text-gray-700 mr-3 select-none">View Mode:</span>
+					<div className="flex space-x-2">
+						<button
+							onClick={() => setViewMode("stats")}
+							className={`px-3 py-1 rounded text-sm ${
+								viewMode === "stats" ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
+							}`}
+						>
+							Stats
+						</button>
+						<button
+							onClick={() => setViewMode("explorer")}
+							className={`px-3 py-1 rounded text-sm ${
+								viewMode === "explorer" ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
+							}`}
+						>
+							Explorer
+						</button>
+						<button
+							onClick={() => setViewMode("coverage")}
+							className={`px-3 py-1 rounded text-sm ${
+								viewMode === "coverage" ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
+							}`}
+						>
+							Coverage
+						</button>
+					</div>
 				</div>
 			</div>
 
