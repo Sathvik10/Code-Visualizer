@@ -11,465 +11,472 @@ import LintingCodeViewer from "./LintingCodeViewer";
 import FunctionTable from "./FunctionTable";
 
 const FunctionDescriptionPanel = ({
-  fileContent1,
-  lintIssues,
-  filepath,
-  focusedLine,
-  getLintErrorsForFile
+	fileContent1,
+	lintIssues,
+	filepath,
+	focusedLine,
+	getLintErrorsForFile,
 }) => {
-  // state to track whether linting is on or off
-  const [lintingEnabled, setLintingEnabled] = useState(true);
+	// state to track whether linting is on or off
+	const [lintingEnabled, setLintingEnabled] = useState(true);
 
-  // toggle handler
-  const toggleLinting = () => setLintingEnabled(enabled => !enabled);
+	// toggle handler
+	const toggleLinting = () => setLintingEnabled((enabled) => !enabled);
 
-  // choose between real errors or none
-  const currentLintErrors = lintingEnabled
-    ? getLintErrorsForFile(lintIssues, filepath)
-    : [];
+	// choose between real errors or none
+	const currentLintErrors = lintingEnabled
+		? getLintErrorsForFile(lintIssues, filepath)
+		: [];
 
-  return (
-    <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px] overflow-auto">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-semibold">Function Description</h2>
-        <button
-          onClick={toggleLinting}
-          className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition"
-        >
-          {lintingEnabled ? 'Disable Linting' : 'Enable Linting'}
-        </button>
-      </div>
+	return (
+		<div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px] overflow-auto">
+			<div className="flex items-center justify-between mb-2">
+				<h2 className="text-lg font-semibold">Function Description</h2>
+				<button
+					onClick={toggleLinting}
+					className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition"
+				>
+					{lintingEnabled ? "Disable Linting" : "Enable Linting"}
+				</button>
+			</div>
 
-      <LintingCodeViewer
-        fileContent={fileContent1}
-        lintErrors={currentLintErrors}
-        focusLine={focusedLine}
-      />
-    </div>
-  );
+			<LintingCodeViewer
+				fileContent={fileContent1}
+				lintErrors={currentLintErrors}
+				focusLine={focusedLine}
+			/>
+		</div>
+	);
 };
 
 const Dashboard = () => {
-  const [chartData, setChartData] = useState([]);
-  const [treeStructureData, setTreeStructureData] = useState([]);
-  const [fileChartData, setFileChartData] = useState([]);
-  const [fileContent1, setFileContent] = useState("Please select a file to view");
+	const [chartData, setChartData] = useState([]);
+	const [treeStructureData, setTreeStructureData] = useState([]);
+	const [fileChartData, setFileChartData] = useState([]);
+	const [fileContent1, setFileContent] = useState(
+		"Please select a file to view"
+	);
 
-  const [repoURL, setRepoURL] = useState("");
-  const [folderName, setFolderName] = useState("");
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [focusedLine, setFocusedLine] = useState(-1);
+	const [repoURL, setRepoURL] = useState("");
+	const [folderName, setFolderName] = useState("");
+	const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
+	const [errorMessage, setErrorMessage] = useState("");
+	const [focusedLine, setFocusedLine] = useState(-1);
 
-  const [lintIssues, setLintIssues] = useState([]);
+	const [lintIssues, setLintIssues] = useState([]);
 
-  // for the functions api
-  const [functions, setFunctions] = useState([]);
-  
-  // for the codeflow api
-  const [selectedFunction, setSelectedFunction] = useState(null);
-  const [codeFlowTree, setCodeFlowTree] = useState(null);
-  const [shouldFetchFlow, setShouldFetchFlow] = useState(false);
+	// for the functions api
+	const [functions, setFunctions] = useState([]);
 
-  const projectName = localStorage.getItem("projectName");
-  const [filepath, setFilepath] = useState(
-    localStorage.getItem("filepath") || ""
-  );
+	// for the codeflow api
+	const [selectedFunction, setSelectedFunction] = useState(null);
+	const [codeFlowTree, setCodeFlowTree] = useState(null);
+	const [shouldFetchFlow, setShouldFetchFlow] = useState(false);
 
-  const [fileViewerPath, setFileViewerPath] = useState("")
-  const apipath = localStorage.getItem("apipath");
+	const projectName = localStorage.getItem("projectName");
+	const [filepath, setFilepath] = useState(
+		localStorage.getItem("filepath") || ""
+	);
 
-  const navigate = useNavigate();
+	const [fileViewerPath, setFileViewerPath] = useState("");
+	const apipath = localStorage.getItem("apipath");
 
-  const [lintingEnabled, setLintingEnabled] = useState(false);
+	const navigate = useNavigate();
 
-  // toggle handler
-  const toggleLinting = () => setLintingEnabled(enabled => !enabled);
+	const [lintingEnabled, setLintingEnabled] = useState(false);
 
-  // ─── Sidebar collapse & search state ─────────────────────────
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [sidebarSearch, setSidebarSearch] = useState("");
-  const [viewMode, setViewMode] = useState("stats"); // "stats" | "explorer"
+	// toggle handler
+	const toggleLinting = () => setLintingEnabled((enabled) => !enabled);
 
-  // near the top of your Dashboard() before any useEffects:
-  const isFileSelected = filepath && filepath.endsWith(".go");
+	// ─── Sidebar collapse & search state ─────────────────────────
+	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+	const [sidebarSearch, setSidebarSearch] = useState("");
+	const [viewMode, setViewMode] = useState("stats"); // "stats" | "explorer"
 
+	// near the top of your Dashboard() before any useEffects:
+	const isFileSelected = filepath && filepath.endsWith(".go");
 
-  // Recursively filter the tree by name
-  const filterTree = (node, query) => {
-    if (!query) return node;
-    const nameMatches = node.name.toLowerCase().includes(query.toLowerCase());
-    const filteredChildren = (node.children || [])
-      .map(child => filterTree(child, query))
-      .filter(Boolean);
-    if (nameMatches || filteredChildren.length) {
-      return { ...node, children: filteredChildren };
-    }
-    return null;
-  };
-  const filteredTreeData = useMemo(() => {
-    return filterTree(treeStructureData, sidebarSearch) || { name: "No results", children: [] };
-  }, [treeStructureData, sidebarSearch]);
- 
+	// Recursively filter the tree by name
+	const filterTree = (node, query) => {
+		if (!query) return node;
+		const nameMatches = node.name
+			.toLowerCase()
+			.includes(query.toLowerCase());
+		const filteredChildren = (node.children || [])
+			.map((child) => filterTree(child, query))
+			.filter(Boolean);
+		if (nameMatches || filteredChildren.length) {
+			return { ...node, children: filteredChildren };
+		}
+		return null;
+	};
+	const filteredTreeData = useMemo(() => {
+		return (
+			filterTree(treeStructureData, sidebarSearch) || {
+				name: "No results",
+				children: [],
+			}
+		);
+	}, [treeStructureData, sidebarSearch]);
 
-  useEffect(() => {
-    if(!isFileSelected){
-      setFocusedLine(-1)
-    }
-  }, [isFileSelected])
+	useEffect(() => {
+		if (!isFileSelected) {
+			setFocusedLine(-1);
+		}
+	}, [isFileSelected]);
 
-  useEffect(()=>{
-    if (fileViewerPath.endsWith(".go")){
-      fetch(`http://localhost:8080/api/v1/filecontent/${projectName}?filepath=${fileViewerPath}`)
-      .then(res => res.json())
-      .then(res => {
-        setFileContent(res.response)
-      }).catch((err) => {
-        console.error("Error fetching stats:", err);
-        navigate("/");
-      })
-    }else{
-      setFileContent("Please select a file to view")
-    }
-  }, [fileViewerPath])
+	useEffect(() => {
+		if (fileViewerPath.endsWith(".go")) {
+			fetch(
+				`http://localhost:8080/api/v1/filecontent/${projectName}?filepath=${fileViewerPath}`
+			)
+				.then((res) => res.json())
+				.then((res) => {
+					setFileContent(res.response);
+				})
+				.catch((err) => {
+					console.error("Error fetching stats:", err);
+					navigate("/");
+				});
+		} else {
+			setFileContent("Please select a file to view");
+		}
+	}, [fileViewerPath]);
 
-  useEffect(()=>{
-    if (filepath.endsWith(".go")){
-      if (filepath != fileViewerPath){
-        setFileViewerPath(filepath)
-      }
-    }
-  }, [filepath])
+	useEffect(() => {
+		if (filepath.endsWith(".go")) {
+			if (filepath != fileViewerPath) {
+				setFileViewerPath(filepath);
+			}
+		}
+	}, [filepath]);
 
-  // Fetch Git stats
-  useEffect(() => {
-    fetch(`http://localhost:8080/api/v1/gitstats/${projectName}`)
-      .then((res) => res.json())
-      .then((json) => {
-        const contributors = json.response.contributors;
+	// Fetch Git stats
+	useEffect(() => {
+		fetch(`http://localhost:8080/api/v1/gitstats/${projectName}`)
+			.then((res) => res.json())
+			.then((json) => {
+				const contributors = json.response.contributors;
 
-        // Aggregate data
-        const aggregated = {};
-        contributors.forEach((c) => {
-          const key = `${c.name}|${c.email}`;
-          if (!aggregated[key]) {
+				// Aggregate data
+				const aggregated = {};
+				contributors.forEach((c) => {
+					const key = `${c.name}|${c.email}`;
+					if (!aggregated[key]) {
+						aggregated[key] = {
+							name: c.name,
+							email: c.email,
+							count: 0,
+							measure: "%",
+						};
+					}
+					aggregated[key].count += c.totalContributionPercentage;
+				});
 
-            aggregated[key] = {
-              name: c.name,
-              email: c.email,
-              count: 0,
-              measure : '%',
+				setChartData(Object.values(aggregated));
+			})
+			.catch((err) => {
+				console.error("Error fetching stats:", err);
+				navigate("/");
+			});
+	}, [navigate, projectName]);
 
-            };
-          }
-          aggregated[key].count += c.totalContributionPercentage;
-        });
+	// Fetch Tree structure
+	useEffect(() => {
+		fetch(`http://localhost:8080/api/v1/treestructure/${projectName}`)
+			.then((res) => res.json())
+			.then((json) => {
+				const buildTree = (node) => {
+					return {
+						name: node.name || "root",
+						path: node.path || "",
+						children: (node.children || [])
+							.filter((child) => child.isDir || child.name)
+							.map(buildTree),
+					};
+				};
+				setTreeStructureData(buildTree(json.response));
+			})
+			.catch((err) => {
+				console.error("Error fetching:", err);
+				navigate("/");
+			});
+	}, [projectName]);
 
-        setChartData(Object.values(aggregated));
-      })
-      .catch((err) => {
-        console.error("Error fetching stats:", err);
-        navigate("/");
-      });
-  }, [navigate, projectName]);
+	// Fetch Code Flow
+	useEffect(() => {
+		if (!shouldFetchFlow || !selectedFunction) return;
 
-  // Fetch Tree structure
-  useEffect(() => {
-    fetch(`http://localhost:8080/api/v1/treestructure/${projectName}`)
-      .then((res) => res.json())
-      .then((json) => {
-        const buildTree = (node) => {
-          return {
-            name: node.name || "root",
-            path: node.path || "",
-            children: (node.children || [])
-              .filter((child) => child.isDir || child.name)
-              .map(buildTree),
-          };
-        };
-        setTreeStructureData(buildTree(json.response));
-      })
-      .catch((err) => {
-        console.error("Error fetching:", err);
-        navigate("/");
-      });
-  }, [projectName]);
+		fetch(
+			`http://localhost:8080/api/v1/codeflow/${projectName}?filepath=${apipath}&function=${selectedFunction}`
+		)
+			.then((res) => res.json())
+			.then((json) => {
+				const transformCodeFlowToTree = (node) => {
+					if (!node) return null;
 
+					return {
+						name: node.Name || "Unnamed",
+						path: `${node.File}`,
+						children: (node.Children || []).map(
+							transformCodeFlowToTree
+						),
+						comment: node.Doc,
+						line: node.Line,
+					};
+				};
+				setCodeFlowTree(transformCodeFlowToTree(json.response)); // store tree root
+				setShouldFetchFlow(false);
+			})
+			.catch((err) => {
+				console.error("Error fetching Code Flow:", err);
+				setShouldFetchFlow(false);
+			});
+	}, [shouldFetchFlow, projectName, apipath, selectedFunction]);
 
-  // Fetch Code Flow
-  useEffect(() => {
-	if (!shouldFetchFlow || !selectedFunction) return;
-  
-	fetch(`http://localhost:8080/api/v1/codeflow/${projectName}?filepath=${apipath}&function=${selectedFunction}`)
-	  .then((res) => res.json())
-	  .then((json) => {
-		const transformCodeFlowToTree = (node) => {
-			if (!node) return null;
-		  
-			return {
-			  name: node.Name || "Unnamed",
-			  path: `${node.File}`,
-			  children: (node.Children || []).map(transformCodeFlowToTree),
-        comment : node.Doc,
-        line : node.Line,
-			};
-		  };
-		setCodeFlowTree(transformCodeFlowToTree(json.response)); // store tree root
-		setShouldFetchFlow(false);
-	  })
-	  .catch((err) => {
-		console.error("Error fetching Code Flow:", err);
-		setShouldFetchFlow(false);
-	  });
-  }, [shouldFetchFlow, projectName, apipath, selectedFunction]);
-  
-  
+	// Fetch File stats
+	useEffect(() => {
+		fetch(
+			`http://localhost:8080/api/v1/filestats/${projectName}?filepath=${apipath}`
+		)
+			.then((res) => res.json())
+			.then((json) => {
+				const contributors = json.response;
+				const aggregated = {};
+				contributors.forEach((c) => {
+					const key = `${c.name}|${c.email}`;
+					if (!aggregated[key]) {
+						aggregated[key] = {
+							name: c.name,
+							email: c.email,
+							count: 0,
+						};
+						aggregated[key] = {
+							name: c.name,
+							email: c.email,
+							count: 0,
+							measure: "%",
+						};
+					}
+					aggregated[key].count += c.totalContributionPercentage;
+				});
 
-  // Fetch File stats
-  useEffect(() => {
-    fetch(
-      `http://localhost:8080/api/v1/filestats/${projectName}?filepath=${apipath}`
-    )
-      .then((res) => res.json())
-      .then((json) => {
-        const contributors = json.response;
-        const aggregated = {};
-        contributors.forEach((c) => {
-          const key = `${c.name}|${c.email}`;
-          if (!aggregated[key]) {
-            aggregated[key] = { name: c.name, email: c.email, count: 0 };
-            aggregated[key] = {
-              name: c.name,
-              email: c.email,
-              count: 0,
-              measure : '%',
-            };
-          }
-          aggregated[key].count += c.totalContributionPercentage;
-        });
+				setFileChartData(Object.values(aggregated));
+			})
+			.catch((err) => {
+				console.error("Error fetching file-level contributions:", err);
+			});
+	}, [projectName, filepath, apipath]);
 
-        setFileChartData(Object.values(aggregated));
-      })
-      .catch((err) => {
-        console.error("Error fetching file-level contributions:", err);
-      });
-  }, [projectName, filepath, apipath]);
+	useEffect(() => {
+		fetch(`http://localhost:8080/api/v1/lintissues/${projectName}`)
+			.then((res) => res.json())
+			.then((res) => {
+				setLintIssues(res.response);
+			})
+			.catch((err) => {
+				console.error("Error fetching file-level contributions:", err);
+			});
+	}, [navigate, filepath, projectName]);
 
-  useEffect(() => {
-    fetch(`http://localhost:8080/api/v1/lintissues/${projectName}`)
-    .then(res => res.json())
-    .then(res => {
-      setLintIssues(res.response)
-    }).catch((err) => {
-      console.error("Error fetching file-level contributions:", err);
-    });
+	// Fetch function list when a Go file is selected
+	useEffect(() => {
+		if (filepath.endsWith(".go")) {
+			fetch(
+				`http://localhost:8080/api/v1/functions/${projectName}?filepath=${apipath}`
+			)
+				.then((res) => res.json())
+				.then((data) => {
+					var resp = data.response || [];
+					for (var i = 0; i < resp.length; i++) {
+						resp[i] = resp[i].replace("(*", "");
+						resp[i] = resp[i].replace("(", "");
+						resp[i] = resp[i].replace(")", "");
+					}
 
-  },[navigate, filepath, projectName]);
+					setFunctions(data.response || []);
+					setSelectedFunction(null);
+				})
+				.catch((err) => {
+					console.error("Error fetching functions:", err);
+				});
+		} else {
+			setFunctions([]);
+			setSelectedFunction(null);
+			setCodeFlowTree(null);
+		}
+	}, [filepath, projectName, apipath]);
 
-  // Fetch function list when a Go file is selected
-  useEffect(() => {
-    if (filepath.endsWith(".go")) {
-      fetch(`http://localhost:8080/api/v1/functions/${projectName}?filepath=${apipath}`)
-        .then(res => res.json())
-        .then(data => {
-          var resp = data.response || []
-          for(var i = 0; i < resp.length; i++){
-            resp[i] = resp[i].replace(
-              "(*", ""
-            );
-            resp[i] = resp[i].replace(
-              "(", ""
-            );
-            resp[i] = resp[i].replace(
-              ")", ""
-            );
-          }
+	const handleNodeClick = (clickedPath) => {
+		const basePath = localStorage.getItem("filepath") || "";
+		const combinedPath = basePath.endsWith("/")
+			? basePath + clickedPath
+			: basePath + "/" + clickedPath;
 
-          setFunctions(data.response || []);
-		      setSelectedFunction(null);
-        })
-        .catch(err => {
-          console.error("Error fetching functions:", err);
-        });
-    } else {
-      setFunctions([]);
-	  setSelectedFunction(null);
-	  setCodeFlowTree(null)
-    }
-  }, [filepath, projectName, apipath]);
+		localStorage.setItem("apipath", combinedPath);
+		setFilepath(combinedPath);
+		// clear the function table and code flow tree when you click a new file
+		localStorage.setItem("functionname", "");
+		setSelectedFunction(null);
+		setCodeFlowTree(null);
+	};
 
-  const handleNodeClick = (clickedPath) => {
-    const basePath = localStorage.getItem("filepath") || "";
-    const combinedPath = basePath.endsWith("/")
-      ? basePath + clickedPath
-      : basePath + "/" + clickedPath;
+	const handleCodeFlowNodeClicked = (focusLine, file) => {
+		if (file != fileViewerPath) {
+			setFileViewerPath(file);
+		}
+		setFocusedLine(focusLine);
+	};
 
-    localStorage.setItem("apipath", combinedPath);
-    setFilepath(combinedPath);
-    // clear the function table and code flow tree when you click a new file
-    localStorage.setItem("functionname", "");
-    setSelectedFunction(null);
-    setCodeFlowTree(null);
-    
-  };
+	const handleFunctionClick = (functionName) => {
+		localStorage.setItem("functionname", functionName);
+		setSelectedFunction(functionName);
+		setShouldFetchFlow(true);
+	};
 
-  const handleCodeFlowNodeClicked = (focusLine, file) => {
-    if (file != fileViewerPath){
-      setFileViewerPath(file)
-    }
-    setFocusedLine(focusLine)
-  };
+	const getLintErrorsForFile = (lintIssues, filepath) => {
+		const lintErrors = [];
+		if (!filepath.endsWith(".go")) {
+			return lintErrors;
+		}
 
-  const handleFunctionClick = (functionName) => {
-    localStorage.setItem("functionname", functionName);
-    setSelectedFunction(functionName);
-    setShouldFetchFlow(true); 
-  };
-  
+		if (!(Array.isArray(lintIssues) && lintIssues.length > 0)) {
+			return lintErrors;
+		}
 
-  const getLintErrorsForFile = (lintIssues, filepath) => {
-    const lintErrors = []
-    if (!filepath.endsWith(".go")){
-      return lintErrors
-    }
+		const relativePath = getRelativePath(filepath);
+		lintIssues.forEach((li) => {
+			if (li.Pos.Filename == relativePath) {
+				lintErrors.push({
+					line: li.Pos.Line,
+					message: li.FromLinter + " : " + li.Text,
+				});
+			}
+		});
+		return lintErrors;
+	};
 
-    if (!(Array.isArray(lintIssues) && lintIssues.length > 0)){
-      return lintErrors
-    }
+	const handleClone = async (event) => {
+		event.preventDefault();
+		setIsButtonDisabled(true);
+		setIsLoading(true);
+		setErrorMessage("");
 
-    const relativePath = getRelativePath(filepath)
-    lintIssues.forEach(li => {
-      if (li.Pos.Filename == relativePath){
-        lintErrors.push(
-          {
-            line : li.Pos.Line,
-            message : li.FromLinter + " : " + li.Text
-          }
-        )
-      }
-    })
-    return lintErrors
-  }
+		try {
+			const res = await fetch("http://localhost:8080/api/v1/clone", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					repoURL: repoURL,
+					foldername: folderName,
+				}),
+			});
 
-  const handleClone = async (event) => {
-    event.preventDefault();
-    setIsButtonDisabled(true);
-    setIsLoading(true);
-    setErrorMessage("");
+			if (!res.ok) {
+				throw new Error(`failed with status ${res.status}`);
+			}
 
-    try {
-      const res = await fetch("http://localhost:8080/api/v1/clone", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          repoURL: repoURL,
-          foldername: folderName,
-        }),
-      });
+			const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(`failed with status ${res.status}`);
-      }
+			if (data.response === "Success") {
+				localStorage.setItem("projectName", data.name);
+				localStorage.setItem("filepath", data.filepath);
+				localStorage.setItem("apipath", data.filepath);
+				navigate("/dashboard");
+			} else {
+				setErrorMessage(
+					"Clone failed. Please check the repository and folder name."
+				);
+			}
+		} catch (error) {
+			setErrorMessage(
+				`Error Cloning: ${error.message} | Please check the repository and folder name.`
+			);
+		} finally {
+			setIsButtonDisabled(false);
+			setIsLoading(false);
+		}
+	};
 
-      const data = await res.json();
+	const getRelativePath = (filepath) => {
+		const basePath = localStorage.getItem("filepath") || "";
+		if (filepath == basePath) return null;
 
-      if (data.response === "Success") {
-        localStorage.setItem("projectName", data.name);
-        localStorage.setItem("filepath", data.filepath);
-        localStorage.setItem("apipath", data.filepath);
-        navigate("/dashboard");
-      } else {
-        setErrorMessage(
-          "Clone failed. Please check the repository and folder name."
-        );
-      }
-    } catch (error) {
-      setErrorMessage(
-        `Error Cloning: ${error.message} | Please check the repository and folder name.`
-      );
-    } finally {
-      setIsButtonDisabled(false);
-      setIsLoading(false);
-    }
-  };
+		const relativePath = filepath.startsWith(basePath)
+			? filepath.slice(basePath.length).replace(/^\\+|^\/+/, "")
+			: filepath;
+		return relativePath;
+	};
 
-  const getRelativePath = (filepath) => {
-    const basePath = localStorage.getItem("filepath") || "";
-    if (filepath == basePath)
-      return null
+	return (
+		<>
+			<div className="fixed top-0 left-0 w-full bg-white z-50 shadow h-16 flex items-center px-6">
+				<Navbar
+					repoURL={repoURL}
+					setRepoURL={setRepoURL}
+					folderName={folderName}
+					setFolderName={setFolderName}
+					handleClone={handleClone}
+					isLoading={isLoading}
+					isButtonDisabled={isButtonDisabled}
+					setIsButtonDisabled={setIsButtonDisabled}
+					setIsLoading={setIsLoading}
+					errorMessage={errorMessage}
+					setErrorMessage={setErrorMessage}
+				/>
+				{/* ───── View Mode Toggle ───── */}
+				<div className="flex items-center px-6 py-3">
+					{/* Left label */}
+					<span className="text-gray-700 mr-3 select-none">
+						Stats
+					</span>
 
-    const relativePath = filepath.startsWith(basePath)
-      ? filepath.slice(basePath.length).replace(/^\\+|^\/+/, "")
-      : filepath;
-    return relativePath    
-  };
+					{/* The switch */}
+					<label className="relative inline-flex items-center cursor-pointer">
+						<input
+							type="checkbox"
+							className="sr-only peer"
+							checked={viewMode === "explorer"}
+							onChange={() =>
+								setViewMode(
+									viewMode === "stats" ? "explorer" : "stats"
+								)
+							}
+						/>
+						<div
+							className="
+		w-11 h-6 rounded-full
+		bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300
+		peer-checked:bg-blue-600
+		transition-colors duration-200
+		relative
+		after:content-[''] after:absolute after:top-0.5 after:left-[2px]
+		after:bg-white after:rounded-full
+		after:h-5 after:w-5 after:transition-transform
+		peer-checked:after:translate-x-full
+  "
+						/>
+					</label>
 
+					{/* Right label */}
+					<span className="text-gray-700 ml-3 select-none">
+						Explorer
+					</span>
+				</div>
+			</div>
 
-  return (
-    <>
-      <div className="fixed top-0 left-0 w-full bg-white z-50 shadow h-16 flex items-center px-6">
-        <Navbar
-          repoURL={repoURL}
-          setRepoURL={setRepoURL}
-          folderName={folderName}
-          setFolderName={setFolderName}
-          handleClone={handleClone}
-          isLoading={isLoading}
-          isButtonDisabled={isButtonDisabled}
-          setIsButtonDisabled={setIsButtonDisabled}
-          setIsLoading={setIsLoading}
-          errorMessage={errorMessage}
-          setErrorMessage={setErrorMessage}
-        />
-           {/* ───── View Mode Toggle ───── */}
-            <div className="flex items-center px-6 py-3 border-b">
-              {/* Left label */}
-              <span className="text-gray-700 mr-3 select-none">Stats</span>
-
-              {/* The switch */}
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={viewMode === "explorer"}
-                  onChange={() =>
-                    setViewMode(viewMode === "stats" ? "explorer" : "stats")
-                  }
-                />
-                <div
-                  className="
-                    w-11 h-6 rounded-full
-                    bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300
-                    peer-checked:bg-blue-600
-                    transition-colors duration-200
-                    relative
-                    after:content-[''] after:absolute after:top-0.5 after:left-[2px]
-                    after:bg-white after:border after:rounded-full
-                    after:h-5 after:w-5 after:transition-transform
-                    peer-checked:after:translate-x-full
-                  "
-                />
-              </label>
-
-              {/* Right label */}
-              <span className="text-gray-700 ml-3 select-none">Explorer</span>
-            </div>
-
-
-      </div>
-
-      <div className="w-full h-screen pt-16 flex overflow-hidden">
-        {/* Fixed Tree Column */}
-        {/* <div className="w-1/4 bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200 sticky left-0 z-10">
+			<div className="w-full h-screen pt-16 flex overflow-hidden">
+				{/* Fixed Tree Column */}
+				{/* <div className="w-1/4 bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200 sticky left-0 z-10">
           <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
         </div> */}
 
-        {/* ─── Streamlined Sidebar ─────────────────────────────────── */}
-        <div
-          className={`
+				{/* ─── Streamlined Sidebar ─────────────────────────────────── */}
+				<div
+					className={`
             flex-none
             ${isSidebarOpen ? "w-1/4 p-4" : "w-8 p-2"}
             bg-white rounded-2xl
@@ -478,151 +485,198 @@ const Dashboard = () => {
             sticky left-0 z-10
             transition-all duration-300 flex flex-col
           `}
-        >
-          {/* always-visible toggle handle */}
-          <div
-            className={`flex items-center mb-2 /${isSidebarOpen ? "justify-end" : "justify-center"}`}
-          >
-            <button
-              onClick={() => setIsSidebarOpen(open => !open)}
-              className="p-1 rounded bg-gray-200 hover:bg-gray-300"
-            >
-              {isSidebarOpen ? "«" : "»"}
-            </button>
-          </div>
+				>
+					{/* always-visible toggle handle */}
+					<div
+						className={`flex items-center mb-2 /${
+							isSidebarOpen ? "justify-end" : "justify-center"
+						}`}
+					>
+						<button
+							onClick={() => setIsSidebarOpen((open) => !open)}
+							className="p-1 rounded bg-gray-200 hover:bg-gray-300"
+						>
+							{isSidebarOpen ? "«" : "»"}
+						</button>
+					</div>
 
-          {/* only show searchtree when open */}
-          {isSidebarOpen && (
-            <>
-              <input
-                type="text"
-                className="w-full mb-2 px-2 py-1 border rounded"
-                placeholder="Search files..."
-                value={sidebarSearch}
-                onChange={e => setSidebarSearch(e.target.value)}
-              />
-              <TidyTree data={filteredTreeData} onNodeClick={handleNodeClick} />
-            </>
-          )}
-        </div>
+					{/* only show searchtree when open */}
+					{isSidebarOpen && (
+						<>
+							<input
+								type="text"
+								className="w-full mb-2 px-2 py-1 border rounded"
+								placeholder="Search files..."
+								value={sidebarSearch}
+								onChange={(e) =>
+									setSidebarSearch(e.target.value)
+								}
+							/>
+							<TidyTree
+								data={filteredTreeData}
+								onNodeClick={handleNodeClick}
+							/>
+						</>
+					)}
+				</div>
 
-        {/* Scrollable Content Area */}
+				{/* Scrollable Content Area */}
 
-        {
-        <div className="flex-1 flex flex-col h-full overflow-y-auto transition-all duration-300">
-          <div className="flex gap-4 p-4 h-full">
-            
-            {/* Column 1 */}
-            <div className="w-1/3 flex flex-col gap-4 h-full">
-              {
-                viewMode === "stats" ? 
-                (<>
-                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-                    <PieChart data={fileChartData} title={"File-Level Contributions"} />
-                  </div>
-                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-                    <CircularPacking data={chartData} title={"Overall Contributions"} />
-                  </div>
-                </>) :
-                (
-                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-                    <FunctionTable 
-                      functions={filepath.endsWith(".go") ? functions : []}
-                      onFunctionClick={handleFunctionClick}
-                      selectedFunction={selectedFunction}
-                    />
-                  </div>
-                )
-              }
-            </div>
+				{
+					<div className="flex-1 flex flex-col h-full overflow-y-auto transition-all duration-300">
+						<div className="flex gap-4 p-4 h-full">
+							{/* Column 1 */}
+							<div className="w-1/3 flex flex-col gap-4 h-full">
+								{viewMode === "stats" ? (
+									<>
+										<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+											<PieChart
+												data={fileChartData}
+												title={
+													"File-Level Contributions"
+												}
+											/>
+										</div>
+										<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+											<CircularPacking
+												data={chartData}
+												title={"Overall Contributions"}
+											/>
+										</div>
+									</>
+								) : (
+									<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+										<FunctionTable
+											functions={
+												filepath.endsWith(".go")
+													? functions
+													: []
+											}
+											onFunctionClick={
+												handleFunctionClick
+											}
+											selectedFunction={selectedFunction}
+										/>
+									</div>
+								)}
+							</div>
 
-            {/* Column 2 */}
-            <div className="w-1/3 flex flex-col gap-4 h-full">
-              {
-                viewMode !== "stats" ? (
-                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-                    <h2 className="text-lg font-semibold">Function Tree Flow</h2>
-                    <div className="w-full h-full overflow-hidden">
-                      {codeFlowTree === null ? (
-                        <div className="flex items-center justify-center h-full">
-                          <p className="text-gray-500">Select a function to view its flow</p>
-                        </div>
-                      ) : (
-                        <CodeFlowTree 
-                          data={codeFlowTree} 
-                          onNodeClick={handleCodeFlowNodeClicked}/>
-                      )}
-                    </div>
-                  </div>
-                  ) : (
-                  <>
-                    <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-                      <LintIssuesByLinter 
-                        data={lintIssues} 
-                        title={`Lint issues in ${getRelativePath(filepath) || "Repo"}`} 
-                        filterPath={getRelativePath(filepath)} 
-                        useBarChart={false} 
-                      />
-                    </div>
-                    <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-                      <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
-                    </div>
-                  </>
-              )}
-            </div>
+							{/* Column 2 */}
+							<div className="w-1/3 flex flex-col gap-4 h-full">
+								{viewMode !== "stats" ? (
+									<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+										<h2 className="text-lg font-semibold">
+											Function Tree Flow
+										</h2>
+										<div className="w-full h-full overflow-hidden">
+											{codeFlowTree === null ? (
+												<div className="flex items-center justify-center h-full">
+													<p className="text-gray-500">
+														Select a function to
+														view its flow
+													</p>
+												</div>
+											) : (
+												<CodeFlowTree
+													data={codeFlowTree}
+													onNodeClick={
+														handleCodeFlowNodeClicked
+													}
+												/>
+											)}
+										</div>
+									</div>
+								) : (
+									<>
+										<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+											<LintIssuesByLinter
+												data={lintIssues}
+												title={`Lint issues in ${
+													getRelativePath(filepath) ||
+													"Repo"
+												}`}
+												filterPath={getRelativePath(
+													filepath
+												)}
+												useBarChart={false}
+											/>
+										</div>
+										<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+											<LintIssuesByLinter
+												data={lintIssues}
+												title={"Lint Issues by Linter"}
+											/>
+										</div>
+									</>
+								)}
+							</div>
 
-            {/* Column 3 */}
-            <div className="w-1/3 flex flex-col gap-4 h-full">
-            {
-              viewMode !== "stats" ? (
-                <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1 overflow-auto">
-                  <h2 className="text-lg font-semibold mb-2">Function Description</h2>
-                  {/* Optional content here */}
-                  <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} focusLine={focusedLine} />
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1 overflow-auto flex flex-col">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold">File Viewer</h2>
+							{/* Column 3 */}
+							<div className="w-1/3 flex flex-col gap-4 h-full">
+								{viewMode !== "stats" ? (
+									<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1 overflow-auto">
+										<h2 className="text-lg font-semibold mb-2">
+											Function Description
+										</h2>
+										{/* Optional content here */}
+										<LintingCodeViewer
+											fileContent={fileContent1}
+											lintErrors={getLintErrorsForFile(
+												lintIssues,
+												filepath
+											)}
+											focusLine={focusedLine}
+										/>
+									</div>
+								) : (
+									<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1 overflow-auto flex flex-col">
+										<div className="flex items-center justify-between mb-4">
+											<h2 className="text-lg font-semibold">
+												File Viewer
+											</h2>
 
-                    {/* Beautiful toggle switch */}
-                    <label className="inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={lintingEnabled}
-                        onChange={toggleLinting}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer 
+											{/* Beautiful toggle switch */}
+											<label className="inline-flex items-center cursor-pointer">
+												<input
+													type="checkbox"
+													checked={lintingEnabled}
+													onChange={toggleLinting}
+													className="sr-only peer"
+												/>
+												<div
+													className="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer 
                                       peer-checked:bg-blue-600 transition-colors duration-200
                                       relative after:content-[''] after:absolute after:top-0.5 after:left-[2px]
                                       after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-transform
-                                      peer-checked:after:translate-x-full">
-                      </div>
-                      <span className="ml-3 text-sm font-medium text-gray-700">
-                        {lintingEnabled ? 'Linting On' : 'Linting Off'}
-                      </span>
-                    </label>
-                  </div>
+                                      peer-checked:after:translate-x-full"
+												></div>
+												<span className="ml-3 text-sm font-medium text-gray-700">
+													{lintingEnabled
+														? "Linting On"
+														: "Linting Off"}
+												</span>
+											</label>
+										</div>
 
-                  <div className="flex-1 overflow-auto">
-                    <LintingCodeViewer
-                      fileContent={fileContent1}
-                      lintErrors={getLintErrorsForFile(lintIssues, filepath)}
-                      lintingEnabled={lintingEnabled}
-                    />
-                  </div>
-                </div>
-
-              )}
-            </div>
-          </div>
-        </div>
-        
-          }
-      </div>
-    </>
-  );
+										<div className="flex-1 overflow-auto">
+											<LintingCodeViewer
+												fileContent={fileContent1}
+												lintErrors={getLintErrorsForFile(
+													lintIssues,
+													filepath
+												)}
+												lintingEnabled={lintingEnabled}
+											/>
+										</div>
+									</div>
+								)}
+							</div>
+						</div>
+					</div>
+				}
+			</div>
+		</>
+	);
 };
 
 export default Dashboard;
