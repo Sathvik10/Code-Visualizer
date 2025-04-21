@@ -60,7 +60,9 @@ func (r Router) cloneRepo(c *gin.Context) {
 
 	filePath := filepath.Join(path, req.FolderName)
 	name := filepath.Base(filepath.Clean(path))
-	resp, err := r.packageHandler.addPackage(filePath, name)
+	packageName := name + "-" + req.FolderName
+
+	resp, err := r.packageHandler.addPackage(filePath, packageName)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -68,7 +70,7 @@ func (r Router) cloneRepo(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"name":     name,
+		"name":     packageName,
 		"filepath": filePath,
 		"response": resp,
 	})
