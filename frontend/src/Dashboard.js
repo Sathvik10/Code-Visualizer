@@ -337,10 +337,10 @@ const Dashboard = () => {
                 />
               </div>
               <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
-                <CircularPacking data={chartData} title={"Overall Contributions"} />
+                <PieChart data={fileChartData} title={"File-Level Contributions"} />
               </div>
               <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
-                <PieChart data={fileChartData} title={"File-Level Contributions"} />
+                <CircularPacking data={chartData} title={"Overall Contributions"} />
               </div>
             </div>
 
@@ -359,15 +359,15 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
-                <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
-              </div>
-              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
                 <LintIssuesByLinter 
                   data={lintIssues} 
                   title={`Lint issues in ${getRelativePath(filepath) || "Repo"}`} 
                   filterPath={getRelativePath(filepath)} 
                   useBarChart={false} 
                 />
+              </div>
+              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
+                <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
               </div>
             </div>
 
