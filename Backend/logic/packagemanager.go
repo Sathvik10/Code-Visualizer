@@ -228,3 +228,18 @@ func (p PackageManager) GetFileContent(filePath string) (string, error) {
 	}
 	return string(data), nil
 }
+
+// GetCodeCoverage retrieves code coverage statistics for the package
+func (p PackageManager) GetCodeCoverage(specificPath string) (utils.CoverageStats, error) {
+	// Clean and normalize the path
+	cleanPath := ""
+	if specificPath != "" {
+		var err error
+		cleanPath, err = filepath.Rel(p.dirPath, filepath.Join(p.dirPath, specificPath))
+		if err != nil {
+			return utils.CoverageStats{}, err
+		}
+	}
+
+	return utils.GetCodeCoverage(p.dirPath, cleanPath)
+}
