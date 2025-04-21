@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
 
-const CodeFlowTree = ({ data, onNodeClick}) => {
+const CodeFlowTree = ({ data, onNodeClick }) => {
   const svgRef = useRef();
   const wrapperRef = useRef();
   const zoomRef = useRef();
@@ -11,11 +11,11 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
-      requestAnimationFrame(()=>{
+      requestAnimationFrame(() => {
         if (!entries.length) return;
-          const { width, height } = entries[0].contentRect;
-          setDimensions({ width, height });
-      })
+        const { width, height } = entries[0].contentRect;
+        setDimensions({ width, height });
+      });
     });
 
     if (wrapperRef.current) {
@@ -27,10 +27,10 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
 
   useEffect(() => {
     if (!data || !dimensions.width || !dimensions.height) return;
-    console.log(data)
+    console.log(data);
 
     const width = dimensions.width;
-    const dx = 40;
+    const dx = 80; // Increased vertical spacing between nodes
     const root = d3.hierarchy(data);
 
     // Calculate and apply dynamic spacing based on tree depth and expanded nodes
@@ -46,8 +46,8 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
         }
       });
 
-      // Adjust spacing based on expansion count - minimum 120px between levels
-      const dynamicDy = Math.max(baseSpacing, 120);
+      // Adjust spacing based on expansion count - minimum 150px between levels
+      const dynamicDy = Math.max(baseSpacing, 150); // Increased from 120px
 
       return dynamicDy;
     }
@@ -60,12 +60,10 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
       .x((d) => d.y)
       .y((d) => d.x);
 
-    // root.sort((a, b) => d3.ascending(a.data.name, b.data.name));
-
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-      svg.append("defs").append("marker")
+    svg.append("defs").append("marker")
       .attr("id", "arrowhead")
       .attr("viewBox", "0 -5 10 10")
       .attr("refX", 10)
@@ -76,7 +74,6 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
       .attr("fill", "#555")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5");
-
 
     const gZoom = svg.append("g");
     const gLink = gZoom
@@ -104,6 +101,21 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
 
     // Initial centering only on first render
     let isFirstRender = true;
+
+    // Function to determine node visibility based on importance
+    function shouldShowLabel(d) {
+      // Always show root nodes and leaf nodes
+      if (d.depth === 0 || !d._children) return true;
+      
+      // For middle nodes, only show if they're important (criteria can be adjusted)
+      // Here we're saying nodes with longer names might be more important
+      return d.data.name.length > 5;
+    }
+
+    // Function to truncate text
+    function truncateText(text, maxLength = 15) {
+      return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+    }
 
     function update(event, source, newHighlightedPath = []) {
       highlightedPath = newHighlightedPath;
@@ -150,55 +162,63 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
           }
         });
 
-          const tooltip = d3.select("body")
-          .append("div")
-          .attr("class", "tooltip")
-          .style("position", "absolute")
-          .style("padding", "4px 8px")
-          .style("background", "rgba(0,0,0,0.7)")
-          .style("color", "#fff")
-          .style("border-radius", "4px")
-          .style("pointer-events", "none")
-          .style("opacity", 0);
+      // Node circles that will be visible for all nodes
+      nodeEnter
+        .append("circle")
+        .attr("r", 5)
+        .attr("fill", (d) => (d._children ? "#555" : "#999"))
+        .attr("stroke-width", 10)
+        .attr("stroke", "transparent"); // Larger clickable area
 
-          nodeEnter.on("mouseover", (event, d) => {
-            if (d.data.comment != "")
-            {
-              tooltip
-              .style("opacity", 1)
-              .html(d.data.comment)                // or any other property
-              .style("left", (event.pageX + 10) + "px")
-              .style("top",  (event.pageY + 10) + "px");
-            }
+      const tooltip = d3
+        .select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("padding", "4px 8px")
+        .style("background", "rgba(0,0,0,0.7)")
+        .style("color", "#fff")
+        .style("border-radius", "4px")
+        .style("pointer-events", "none")
+        .style("opacity", 0)
+        .style("z-index", 1000);
 
-          })
-          .on("mousemove", (event, d)  => {
-            if (d.data.comment != "")
-              {
-            tooltip
-              .style("left", (event.pageX + 10) + "px")
-              .style("top",  (event.pageY + 10) + "px");
-              }
-          })
-          .on("mouseout", (event, d)  => {
-            if (d.data.comment != "")
-              {
-            tooltip.style("opacity", 0);}
+      nodeEnter
+        .on("mouseover", (event, d) => {
+          // Always show full name on hover
+          tooltip
+            .style("opacity", 1)
+            .html(`${d.data.name}${d.data.comment ? "<br>" + d.data.comment : ""}`)
+            .style("left", event.pageX + 10 + "px")
+            .style("top", event.pageY + 10 + "px");
+        })
+        .on("mousemove", (event) => {
+          tooltip
+            .style("left", event.pageX + 10 + "px")
+            .style("top", event.pageY + 10 + "px");
+        })
+        .on("mouseout", () => {
+          tooltip.style("opacity", 0);
+        });
 
-          })
-        
-
-      // Calculate text padding based on node depth and expanded state
+      // Text labels - only for selected nodes
       nodeEnter
         .append("text")
         .attr("dy", "0.31em")
         .attr("x", (d) => (d._children ? -10 : 10))
         .attr("text-anchor", (d) => (d._children ? "end" : "start"))
-        .text((d) => d.data.name)
+        .text((d) => shouldShowLabel(d) ? truncateText(d.data.name) : "")
+        .attr("fill", "black")
         .attr("stroke", "white")
         .attr("paint-order", "stroke")
         .attr("stroke-width", 3)
-        .attr("stroke-linejoin", "round");
+        .attr("stroke-linejoin", "round")
+        .attr("opacity", (d) => (shouldShowLabel(d) ? 1 : 0))
+        // Add a slight vertical offset based on node position to avoid overlap
+        .attr("y", (d, i) => {
+          // Alternate text position up or down slightly
+          return (d.depth % 2 === 0) ? -10 : 15;
+        });
 
       // Highlighted nodes
       node
@@ -215,7 +235,10 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
         .select("text")
         .transition()
         .duration(duration)
-        .attr("fill", (d) => (highlightedPath.includes(d) ? "#f00" : "black"));
+        .attr("fill", (d) => (highlightedPath.includes(d) ? "#f00" : "black"))
+        // Update text visibility when data changes
+        .text((d) => shouldShowLabel(d) ? truncateText(d.data.name) : "")
+        .attr("opacity", (d) => (shouldShowLabel(d) ? 1 : 0));
 
       // Adjust node positions with more horizontal spacing
       root.each((d) => {
@@ -255,10 +278,14 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
           return diagonal({ source: o, target: o });
         });
 
-        linkEnter.attr("marker-end", "url(#arrowhead)");
+      linkEnter.attr("marker-end", "url(#arrowhead)");
 
-        link.merge(linkEnter).transition().duration(duration).attr("d", diagonal).attr("marker-end", "url(#arrowhead)");
-    
+      link
+        .merge(linkEnter)
+        .transition()
+        .duration(duration)
+        .attr("d", diagonal)
+        .attr("marker-end", "url(#arrowhead)");
 
       link
         .exit()
@@ -278,16 +305,11 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
       // Only center on first render
       let initialScale = 0.7;
       if (isFirstRender) {
-        let initialTransform;
-          initialTransform = d3.zoomIdentity.translate(
-            width / 4 - root.y,
-            dimensions.height / 3.7 - root.x
-          ).scale(initialScale);;
+        let initialTransform = d3.zoomIdentity
+          .translate(width / 4 - root.y, dimensions.height / 3.7 - root.x)
+          .scale(initialScale);
 
-        svg
-          .transition()
-          .duration(duration)
-          .call(zoom.transform, initialTransform);
+        svg.transition().duration(duration).call(zoom.transform, initialTransform);
         zoomRef.current = initialTransform;
         isFirstRender = false;
       }
@@ -304,16 +326,15 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
     update(null, root);
   }, [data, dimensions]);
 
-  // In TidyTree.jsx
   return (
     <div
       ref={wrapperRef}
-      style={{ 
-        width: "100%", 
-        height: "100%", 
+      style={{
+        width: "100%",
+        height: "100%",
         maxHeight: "100%",
         overflow: "hidden",
-        position: "relative" 
+        position: "relative",
       }}
     >
       <svg
@@ -326,7 +347,7 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
           userSelect: "none",
           position: "absolute",
           top: 0,
-          left: 0
+          left: 0,
         }}
       />
     </div>
