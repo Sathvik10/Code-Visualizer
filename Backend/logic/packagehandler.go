@@ -42,10 +42,10 @@ func (p PackageHandler) addPackage(filePath, name string) (string, error) {
 		return "", errors.New("path is a file, not a directory file")
 	}
 
-	if _, ok := p.packages[name]; ok {
-		return "Success", nil
-		// return "", errors.New("package name already in use. give another name")
-	}
+	// if _, ok := p.packages[name]; ok {
+	// 	return "Success", nil
+	// 	// return "", errors.New("package name already in use. give another name")
+	// }
 
 	pm, err := NewPackageManager(name, cleanPath)
 	if err != nil {
