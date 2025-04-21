@@ -8,5 +8,5 @@ func main() {
 	router := logic.SetupRouter()
 
 	// Run the server on port 8080
-	router.Run("0.0.0.0:8080")
+	router.Run(":8080")
 }
