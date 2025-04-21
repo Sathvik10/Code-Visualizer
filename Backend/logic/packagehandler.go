@@ -32,9 +32,14 @@ func (p PackageHandler) addPackage(filePath, name string) (string, error) {
 	}
 
 	// Check if file exists
-	info, err := os.Stat(cleanPath)
+	cwd, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("failed to stat in addpackage %s %v", cleanPath, err)
+		return "", err
+	}
+
+	info, err := os.Stat(filepath.Join(cwd, cleanPath))
+	if err != nil {
+		return "", fmt.Errorf("failed to stat in add package %s %v", cleanPath, err)
 	}
 
 	// Check if it's a directory
