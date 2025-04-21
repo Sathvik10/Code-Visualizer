@@ -10,6 +10,7 @@ import LintIssuesByLinter from "./LintIssueTracker";
 import LintingCodeViewer from "./LintingCodeViewer";
 import FunctionTable from "./FunctionTable";
 import CoverageDashboardPanel from "./CoverageDashboardPanel";
+import {Modal, ChartContainer } from "./Modal"
 
 const FunctionDescriptionPanel = ({
 	fileContent1,
@@ -98,6 +99,30 @@ const Dashboard = () => {
 	// near the top of your Dashboard() before any useEffects:
 	const isFileSelected = filepath && filepath.endsWith(".go");
 
+  // Add state for modals
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    title: "",
+    content: null
+  });
+
+  const openModal = (title, content) => {
+    setModalState({
+      isOpen: true,
+      title,
+      content
+    });
+  };
+
+  const closeModal = () => {
+    setModalState({
+      isOpen: false,
+      title: "",
+      content: null
+    });
+  };
+
+
 	// Recursively filter the tree by name
 	const filterTree = (node, query) => {
 		if (!query) return node;
@@ -112,6 +137,7 @@ const Dashboard = () => {
 		}
 		return null;
 	};
+
 	const filteredTreeData = useMemo(() => {
 		return (
 			filterTree(treeStructureData, sidebarSearch) || {
@@ -518,7 +544,7 @@ const Dashboard = () => {
             <CoverageDashboardPanel projectName={projectName} />
           </div>
         ) : (
-        <div className="flex-1 flex flex-col h-full overflow-y-auto transition-all duration-300">
+        <div className="flex-1 flex flex-col h-full min-h-0 overflow-y-auto transition-all duration-300">
           <div className="flex gap-4 p-4 h-full">
             
             {/* Column 1 */}
@@ -526,12 +552,19 @@ const Dashboard = () => {
               {
                 viewMode === "stats" ? 
                 (<>
-                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-                    <PieChart data={fileChartData} title={"File-Level Contributions"} />
-                  </div>
-                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-                    <CircularPacking data={chartData} title={"Overall Contributions"} />
-                  </div>
+                  <ChartContainer 
+                      title="File-Level Contributions" 
+                      onExpand={() => openModal("File-Level Contributions", <PieChart data={fileChartData} />)}
+                    >
+                      <PieChart data={fileChartData} />
+                    </ChartContainer>
+                    
+                    <ChartContainer 
+                      title="Overall Contributions" 
+                      onExpand={() => openModal("Overall Contributions", <CircularPacking data={chartData} />)}
+                    >
+                      <CircularPacking data={chartData} />
+                  </ChartContainer>
                 </>) :
                 (
                   <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
@@ -572,25 +605,31 @@ const Dashboard = () => {
 									</div>
 								) : (
 									<>
-										<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-											<LintIssuesByLinter
-												data={lintIssues}
-												title={`Lint issues in ${
-													getRelativePath(filepath) ||
-													"Repo"
-												}`}
-												filterPath={getRelativePath(
-													filepath
-												)}
-												useBarChart={false}
-											/>
-										</div>
-										<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-											<LintIssuesByLinter
-												data={lintIssues}
-												title={"Lint Issues by Linter"}
-											/>
-										</div>
+										<ChartContainer 
+                      title={`Lint issues in ${getRelativePath(filepath) || "Repo"}`}
+                      onExpand={() => openModal(
+                        `Lint issues in ${getRelativePath(filepath) || "Repo"}`,
+                        <LintIssuesByLinter 
+                          data={lintIssues} 
+                          filterPath={getRelativePath(filepath)} 
+                          useBarChart={false} 
+                        />
+                      )}>
+                      <LintIssuesByLinter 
+                        data={lintIssues} 
+                        filterPath={getRelativePath(filepath)} 
+                        useBarChart={false} 
+                      />
+                    </ChartContainer>
+                    
+                    <ChartContainer 
+                      title="Lint Issues by Linter"
+                      onExpand={() => openModal(
+                        "Lint Issues by Linter",
+                        <LintIssuesByLinter data={lintIssues} useBarChart={true} />
+                      )}>
+                      <LintIssuesByLinter data={lintIssues} />
+                    </ChartContainer>
 									</>
 								)}
 							</div>
@@ -659,6 +698,16 @@ const Dashboard = () => {
 					</div>
         )}
 			</div>
+
+      <Modal 
+        isOpen={modalState.isOpen} 
+        onClose={closeModal} 
+        title={modalState.title}
+      >
+        <div className="w-full h-full">
+          {modalState.content}
+        </div>
+      </Modal>
 		</>
 	);
 };

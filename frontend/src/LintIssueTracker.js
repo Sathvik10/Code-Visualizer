@@ -46,15 +46,38 @@ const LintIssuesByLinter = ({ data, title , filterPath = null, useBarChart = tru
             drawPieChart(svgRef.current,pie_data)
         }
     } 
+
+    const handleResize = () => {
+      // Clear previous chart
+      d3.select(svgRef.current).selectAll("*").remove();
+      
+      const linterCounts = d3.rollups(
+        data,
+        v => v.length,
+        d => d.FromLinter
+      );
+      
+      // Redraw with new dimensions
+      if (useBarChart)
+        drawsBarChart(svgRef.current, containerRef.current, linterCounts, title);
+      else {
+        const pie_data = PieReadyData(data);
+        drawPieChart(svgRef.current, pie_data);
+      }
+    };
+
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [data]);
 
 
   return (
 
-    <div ref={containerRef}  className="w-full h-full">
-        {!useBarChart && title && <h3 style={{ textAlign: "center" }}>{title}</h3>}
-        <svg ref={svgRef} style={{ width: "90%", height: "90%" }} />
-    </div>
+    <div ref={containerRef} className="w-full h-full flex flex-col items-center justify-center">
+    {!useBarChart && title && <h3 className="text-center">{title}</h3>}
+    <svg ref={svgRef} className="w-full h-full" /> {/* Full width and height */}
+  </div>
     // <div ref={containerRef} className="w-full h-full">
     //   <svg ref={svgRef}></svg>
     // </div>

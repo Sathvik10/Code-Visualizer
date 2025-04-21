@@ -14,7 +14,7 @@ const FunctionTable = ({ functions = [], onFunctionClick, selectedFunction }) =>
               {functions.length === 0 ? (
                 <tr>
                   <td className="px-4 py-2 border border-gray-200 text-gray-400 italic">
-                    No functions found
+                    Please select a file to explore ...
                   </td>
                 </tr>
               ) : (
