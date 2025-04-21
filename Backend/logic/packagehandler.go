@@ -135,7 +135,7 @@ func (p PackageHandler) CloneRepo(repoURL string) (string, error) {
 	folderName := username + "-" + repoName
 	packDir := filepath.Join("repos", folderName)
 
-	if _, err := os.Stat(packDir); err == nil {
+	if _, err := os.Stat(filepath.Join(cwd, packDir)); err == nil {
 		// Directory already exists, no need to clone
 		return packDir, nil
 	}
