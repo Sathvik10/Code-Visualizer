@@ -9,6 +9,7 @@ import Navbar from "./components/NavBar";
 import LintIssuesByLinter from "./LintIssueTracker";
 import LintingCodeViewer from "./LintingCodeViewer";
 import FunctionTable from "./FunctionTable";
+import CoverageDashboardPanel from "./CoverageDashboardPanel";
 
 const FunctionDescriptionPanel = ({
 	fileContent1,
@@ -89,10 +90,10 @@ const Dashboard = () => {
 	// toggle handler
 	const toggleLinting = () => setLintingEnabled((enabled) => !enabled);
 
-	// ─── Sidebar collapse & search state ─────────────────────────
-	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-	const [sidebarSearch, setSidebarSearch] = useState("");
-	const [viewMode, setViewMode] = useState("stats"); // "stats" | "explorer"
+  // ─── Sidebar collapse & search state ─────────────────────────
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [sidebarSearch, setSidebarSearch] = useState("");
+  const [viewMode, setViewMode] = useState("stats"); // "stats" | "explorer" | "coverage"
 
 	// near the top of your Dashboard() before any useEffects:
 	const isFileSelected = filepath && filepath.endsWith(".go");
@@ -520,46 +521,38 @@ const Dashboard = () => {
 					)}
 				</div>
 
-				{/* Scrollable Content Area */}
-
-				{
-					<div className="flex-1 flex flex-col h-full overflow-y-auto transition-all duration-300">
-						<div className="flex gap-4 p-4 h-full">
-							{/* Column 1 */}
-							<div className="w-1/3 flex flex-col gap-4 h-full">
-								{viewMode === "stats" ? (
-									<>
-										<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-											<PieChart
-												data={fileChartData}
-												title={
-													"File-Level Contributions"
-												}
-											/>
-										</div>
-										<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-											<CircularPacking
-												data={chartData}
-												title={"Overall Contributions"}
-											/>
-										</div>
-									</>
-								) : (
-									<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-										<FunctionTable
-											functions={
-												filepath.endsWith(".go")
-													? functions
-													: []
-											}
-											onFunctionClick={
-												handleFunctionClick
-											}
-											selectedFunction={selectedFunction}
-										/>
-									</div>
-								)}
-							</div>
+        {/* Scrollable Content Area */}
+        {viewMode === "coverage" ? (
+          <div className="flex-1 p-4 h-full overflow-auto">
+            <CoverageDashboardPanel projectName={projectName} />
+          </div>
+        ) : (
+        <div className="flex-1 flex flex-col h-full overflow-y-auto transition-all duration-300">
+          <div className="flex gap-4 p-4 h-full">
+            
+            {/* Column 1 */}
+            <div className="w-1/3 flex flex-col gap-4 h-full">
+              {
+                viewMode === "stats" ? 
+                (<>
+                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+                    <PieChart data={fileChartData} title={"File-Level Contributions"} />
+                  </div>
+                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+                    <CircularPacking data={chartData} title={"Overall Contributions"} />
+                  </div>
+                </>) :
+                (
+                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+                    <FunctionTable 
+                      functions={filepath.endsWith(".go") ? functions : []}
+                      onFunctionClick={handleFunctionClick}
+                      selectedFunction={selectedFunction}
+                    />
+                  </div>
+                )
+              }
+            </div>
 
 							{/* Column 2 */}
 							<div className="w-1/3 flex flex-col gap-4 h-full">
@@ -673,7 +666,7 @@ const Dashboard = () => {
 							</div>
 						</div>
 					</div>
-				}
+        )}
 			</div>
 		</>
 	);

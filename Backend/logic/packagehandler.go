@@ -148,3 +148,11 @@ func (p PackageHandler) CloneRepo(repoURL string) (string, error) {
 	// Clone the repository
 	return packDir, utils.CloneRepo(repoURL, filepath.Join(cwd, packDir))
 }
+
+// GetCodeCoverage retrieves code coverage stats for the package
+func (p PackageHandler) GetCodeCoverage(name, path string) (utils.CoverageStats, error) {
+	if _, ok := p.packages[name]; !ok {
+		return utils.CoverageStats{}, errors.New("unknown package")
+	}
+	return p.packages[name].GetCodeCoverage(path)
+}

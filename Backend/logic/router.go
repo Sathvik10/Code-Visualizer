@@ -317,6 +317,31 @@ func (r Router) getFileContributions(c *gin.Context) {
 	})
 }
 
+// getCodeCoverage
+func (r Router) getCodeCoverage(c *gin.Context) {
+	name := c.Param("package")
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Missing path package parameter",
+		})
+		return
+	}
+
+	// Get the file path query parameter (optional for specific file coverage)
+	filePath := c.Query("filepath")
+
+	resp, err := r.packageHandler.GetCodeCoverage(name, filePath)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"response": resp,
+	})
+}
+
 // Router setup
 func SetupRouter() *gin.Engine {
 	// Create a default gin router with default middleware
@@ -357,6 +382,8 @@ func SetupRouter() *gin.Engine {
 		v1.GET("/filecontent/:package", r.getFileContent)
 
 		v1.GET("/codeflow/:package", r.getCodeFlow)
+
+		v1.GET("/codecoverage/:package", r.getCodeCoverage)
 	}
 
 	return router
