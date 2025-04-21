@@ -3,11 +3,52 @@ import PieChart from "./PieChart";
 import { useNavigate } from "react-router-dom";
 import "./DashboardPage.css";
 import TidyTree from "./TidyTree";
+import CodeFlowTree from "./CodeFlowTree";
 import CircularPacking from "./CirclePack";
 import Navbar from "./components/NavBar";
 import LintIssuesByLinter from "./LintIssueTracker";
 import LintingCodeViewer from "./LintingCodeViewer";
 import FunctionTable from "./FunctionTable";
+import { line } from "d3";
+
+const FunctionDescriptionPanel = ({
+  fileContent1,
+  lintIssues,
+  filepath,
+  focusedLine,
+  getLintErrorsForFile
+}) => {
+  // state to track whether linting is on or off
+  const [lintingEnabled, setLintingEnabled] = useState(true);
+
+  // toggle handler
+  const toggleLinting = () => setLintingEnabled(enabled => !enabled);
+
+  // choose between real errors or none
+  const currentLintErrors = lintingEnabled
+    ? getLintErrorsForFile(lintIssues, filepath)
+    : [];
+
+  return (
+    <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px] overflow-auto">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-lg font-semibold">Function Description</h2>
+        <button
+          onClick={toggleLinting}
+          className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition"
+        >
+          {lintingEnabled ? 'Disable Linting' : 'Enable Linting'}
+        </button>
+      </div>
+
+      <LintingCodeViewer
+        fileContent={fileContent1}
+        lintErrors={currentLintErrors}
+        focusLine={focusedLine}
+      />
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const [chartData, setChartData] = useState([]);
@@ -20,6 +61,7 @@ const Dashboard = () => {
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [focusedLine, setFocusedLine] = useState(-1);
 
   const [lintIssues, setLintIssues] = useState([]);
 
@@ -35,13 +77,20 @@ const Dashboard = () => {
   const [filepath, setFilepath] = useState(
     localStorage.getItem("filepath") || ""
   );
+
+  const [fileViewerPath, setFileViewerPath] = useState("")
   const apipath = localStorage.getItem("apipath");
 
   const navigate = useNavigate();
 
+  const [lintingEnabled, setLintingEnabled] = useState(false);
+
+  // toggle handler
+  const toggleLinting = () => setLintingEnabled(enabled => !enabled);
+
   useEffect(()=>{
-    if (filepath.endsWith(".go")){
-      fetch(`http://localhost:8080/api/v1/filecontent/${projectName}?filepath=${apipath}`)
+    if (fileViewerPath.endsWith(".go")){
+      fetch(`http://localhost:8080/api/v1/filecontent/${projectName}?filepath=${fileViewerPath}`)
       .then(res => res.json())
       .then(res => {
         setFileContent(res.response)
@@ -51,6 +100,14 @@ const Dashboard = () => {
       })
     }else{
       setFileContent("Please select a file to view")
+    }
+  }, [fileViewerPath])
+
+  useEffect(()=>{
+    if (filepath.endsWith(".go")){
+      if (filepath != fileViewerPath){
+        setFileViewerPath(filepath)
+      }
     }
   }, [filepath])
 
@@ -121,11 +178,12 @@ const Dashboard = () => {
 		  
 			return {
 			  name: node.Name || "Unnamed",
-			  path: `${node.File}:${node.Line}`,
+			  path: `${node.File}`,
 			  children: (node.Children || []).map(transformCodeFlowToTree),
+        comment : node.Doc,
+        line : node.Line,
 			};
 		  };
-
 		setCodeFlowTree(transformCodeFlowToTree(json.response)); // store tree root
 		setShouldFetchFlow(false);
 	  })
@@ -184,8 +242,21 @@ const Dashboard = () => {
       fetch(`http://localhost:8080/api/v1/functions/${projectName}?filepath=${apipath}`)
         .then(res => res.json())
         .then(data => {
+          var resp = data.response || []
+          for(var i = 0; i < resp.length; i++){
+            resp[i] = resp[i].replace(
+              "(*", ""
+            );
+            resp[i] = resp[i].replace(
+              "(", ""
+            );
+            resp[i] = resp[i].replace(
+              ")", ""
+            );
+          }
+
           setFunctions(data.response || []);
-		  setSelectedFunction(null);
+		      setSelectedFunction(null);
         })
         .catch(err => {
           console.error("Error fetching functions:", err);
@@ -212,11 +283,17 @@ const Dashboard = () => {
     
   };
 
+  const handleCodeFlowNodeClicked = (focusLine, file) => {
+    if (file != fileViewerPath){
+      setFileViewerPath(file)
+    }
+    setFocusedLine(focusLine)
+  };
+
   const handleFunctionClick = (functionName) => {
     localStorage.setItem("functionname", functionName);
     setSelectedFunction(functionName);
     setShouldFetchFlow(true); 
-    console.log("Function clicked:", functionName);
   };
   
 
@@ -355,7 +432,9 @@ const Dashboard = () => {
                       <p className="text-gray-500">Select a function to view its flow</p>
                     </div>
                   ) : (
-                    <TidyTree data={codeFlowTree} isCodeFlow={true} />
+                    <CodeFlowTree 
+                      data={codeFlowTree} 
+                      onNodeClick={handleCodeFlowNodeClicked}/>
                   )}
                 </div>
               </div>
@@ -376,7 +455,13 @@ const Dashboard = () => {
             <div className="w-1/3 flex flex-col gap-4">
               <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px] overflow-auto">
                 <h2 className="text-lg font-semibold mb-2">Function Description</h2>
+                <button onClick={toggleLinting}
+                    className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
+                    {lintingEnabled ? 'Disable Linting' : 'Enable Linting'}
+                  </button>
+
                 {/* Optional content here */}
+                <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} focusLine={focusedLine} lintingEnabled={lintingEnabled}/>
               </div>
               <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px] overflow-auto">
                 <h2 className="text-lg font-semibold mb-2">File Viewer</h2>

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
 
-const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
+const CodeFlowTree = ({ data, onNodeClick}) => {
   const svgRef = useRef();
   const wrapperRef = useRef();
   const zoomRef = useRef();
@@ -27,6 +27,7 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
 
   useEffect(() => {
     if (!data || !dimensions.width || !dimensions.height) return;
+    console.log(data)
 
     const width = dimensions.width;
     const dx = 40;
@@ -64,7 +65,6 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    if (isCodeFlow) {
       svg.append("defs").append("marker")
       .attr("id", "arrowhead")
       .attr("viewBox", "0 -5 10 10")
@@ -76,7 +76,7 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
       .attr("fill", "#555")
       .append("path")
       .attr("d", "M0,-5L10,0L0,5");
-    }
+
 
     const gZoom = svg.append("g");
     const gLink = gZoom
@@ -143,16 +143,12 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
             pathToRoot.push(current);
             current = current.parent;
           }
-
           update(event, d, pathToRoot);
 
           if (onNodeClick) {
-            onNodeClick(d.data.path);
+            onNodeClick(d.data.line, d.data.path);
           }
         });
-
-      // Adjust node appearance based on children state
-      if (!isCodeFlow) {
 
           const tooltip = d3.select("body")
           .append("div")
@@ -166,28 +162,31 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
           .style("opacity", 0);
 
           nodeEnter.on("mouseover", (event, d) => {
-            tooltip
+            if (d.data.comment != "")
+            {
+              tooltip
               .style("opacity", 1)
-              .html(d.doc)                // or any other property
+              .html(d.data.comment)                // or any other property
               .style("left", (event.pageX + 10) + "px")
               .style("top",  (event.pageY + 10) + "px");
+            }
+
           })
-          .on("mousemove", (event) => {
+          .on("mousemove", (event, d)  => {
+            if (d.data.comment != "")
+              {
             tooltip
               .style("left", (event.pageX + 10) + "px")
               .style("top",  (event.pageY + 10) + "px");
+              }
           })
-          .on("mouseout", () => {
-            tooltip.style("opacity", 0);
+          .on("mouseout", (event, d)  => {
+            if (d.data.comment != "")
+              {
+            tooltip.style("opacity", 0);}
+
           })
         
-        
-        nodeEnter
-          .append("circle")
-          .attr("r", 3.5)
-          .attr("fill", (d) => (d._children ? "#555" : "#999"))
-          .attr("stroke-width", 10);
-      }
 
       // Calculate text padding based on node depth and expanded state
       nodeEnter
@@ -256,16 +255,10 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
           return diagonal({ source: o, target: o });
         });
 
-      if (isCodeFlow) {
         linkEnter.attr("marker-end", "url(#arrowhead)");
-      }
 
-      if (!isCodeFlow) {
-        link.merge(linkEnter).transition().duration(duration).attr("d", diagonal)
-      }
-      else {
         link.merge(linkEnter).transition().duration(duration).attr("d", diagonal).attr("marker-end", "url(#arrowhead)");
-      }
+    
 
       link
         .exit()
@@ -286,17 +279,10 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
       let initialScale = 0.7;
       if (isFirstRender) {
         let initialTransform;
-        if (!isCodeFlow){
-          initialTransform = d3.zoomIdentity.translate(
-            width / 6 - root.y,
-            dimensions.height / 2.3 - root.x
-          ).scale(initialScale);;
-        } else {
           initialTransform = d3.zoomIdentity.translate(
             width / 4 - root.y,
             dimensions.height / 3.7 - root.x
           ).scale(initialScale);;
-        }
 
         svg
           .transition()
@@ -347,4 +333,4 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
   );
 };
 
-export default TidyTree;
+export default CodeFlowTree;

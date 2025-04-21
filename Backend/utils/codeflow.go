@@ -3,96 +3,229 @@ package utils
 import (
 	"fmt"
 	"go/ast"
-	"go/parser"
 	"go/token"
+	"go/types"
+	"os"
+	"path/filepath"
+	"slices"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 )
+
+var ignoreList = []string{"fmt", "error", "make", "map", "len", "append", "Error", "strings", "slices", "log"}
 
 // FunctionNode represents a node in our call tree
 type FunctionNode struct {
-	Name     string
-	File     string
-	Line     int
-	Children []*FunctionNode
+	Name       string
+	Package    string
+	File       string
+	Line       int
+	Doc        string
+	Children   []*FunctionNode
+	IsExternal bool // Whether this function is from an external package we couldn't analyze
 }
 
 // NewFunctionNode creates a new function node
-func NewFunctionNode(name string, file string, line int) *FunctionNode {
+func NewFunctionNode(name, pkg, file string, line int, isExternal bool, doc string) *FunctionNode {
 	return &FunctionNode{
-		Name:     name,
-		File:     file,
-		Line:     line,
-		Children: []*FunctionNode{},
+		Name:       name,
+		Package:    pkg,
+		File:       file,
+		Line:       line,
+		Children:   []*FunctionNode{},
+		IsExternal: isExternal,
+		Doc:        doc,
 	}
 }
 
 // AddChild adds a called function to this function's children
 func (fn *FunctionNode) AddChild(child *FunctionNode) {
+	for _, existing := range fn.Children {
+		// Avoid duplicate children with the same name and package
+		if existing.Name == child.Name && existing.Package == child.Package {
+			return
+		}
+	}
 	fn.Children = append(fn.Children, child)
 }
 
-// CodeAnalyzer analyzes Go code to build function call trees
-type CodeAnalyzer struct {
-	fset          *token.FileSet
-	packages      map[string]*ast.Package
-	functionNodes map[string]*FunctionNode
-	currentPkg    string
-}
-
-// NewCodeAnalyzer creates a new code analyzer
-func NewCodeAnalyzer() *CodeAnalyzer {
-	return &CodeAnalyzer{
-		fset:          token.NewFileSet(),
-		packages:      make(map[string]*ast.Package),
-		functionNodes: make(map[string]*FunctionNode),
+// PrintTree prints the function call tree with proper indentation
+func (fn *FunctionNode) PrintTree(indent int) {
+	indentStr := strings.Repeat("  ", indent)
+	fileInfo := filepath.Base(fn.File)
+	if fn.IsExternal {
+		fmt.Printf("%s- %s.%s [external] (%s:%d)\n", indentStr, fn.Package, fn.Name, fileInfo, fn.Line)
+	} else {
+		fmt.Printf("%s- %s.%s (%s:%d)\n", indentStr, fn.Package, fn.Name, fileInfo, fn.Line)
+	}
+	for _, child := range fn.Children {
+		child.PrintTree(indent + 1)
 	}
 }
 
-// ParseDirectory parses all Go files in a directory
-func (ca *CodeAnalyzer) ParseDirectory(dir string) error {
-	packages, err := parser.ParseDir(ca.fset, dir, nil, parser.ParseComments)
+// ExportDOT exports the function call tree as a DOT graph for visualization
+func (fn *FunctionNode) ExportDOT(filename string) error {
+	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
-	for name, pkg := range packages {
-		ca.packages[name] = pkg
-	}
-	return nil
-}
+	// Write the DOT file header
+	fmt.Fprintf(file, "digraph FunctionCallTree {\n")
+	fmt.Fprintf(file, "  rankdir=LR;\n") // Left to right layout
+	fmt.Fprintf(file, "  node [shape=box, style=filled];\n")
 
-// BuildFunctionCallTree builds a function call tree starting from the specified function
-func (ca *CodeAnalyzer) BuildFunctionCallTree(funcName string) (*FunctionNode, error) {
-	pkgName := ""
-	for k := range ca.packages {
-		if !strings.Contains(k, "_test") {
-			pkgName = k
-			break
+	// Use a map to track nodes we've already written to avoid duplicates
+	nodeMap := make(map[string]int)
+	nextID := 1
+
+	var writeDOT func(node *FunctionNode)
+
+	writeDOT = func(node *FunctionNode) {
+		fullName := node.Package + "." + node.Name
+
+		// Check if we've already created this node
+		myID, exists := nodeMap[fullName]
+		if !exists {
+			myID = nextID
+			nodeMap[fullName] = myID
+			nextID++
+
+			// Write this node
+			nodeName := strings.Replace(node.Name, "\"", "\\\"", -1)
+			pkgName := strings.Replace(node.Package, "\"", "\\\"", -1)
+			fileBase := filepath.Base(node.File)
+
+			// Color nodes by package and type
+			fillColor := "lightblue" // Default for local package functions
+			if node.IsExternal {
+				fillColor = "lightgrey" // External functions
+			} else if node.Package != fn.Package {
+				fillColor = "lightgreen" // Functions from other packages in our module
+			}
+
+			// Add method/function indication
+			nodeType := "function"
+			if strings.Contains(node.Name, ".") {
+				nodeType = "method"
+			}
+
+			fmt.Fprintf(file, "  node%d [label=\"%s.%s\\n%s\\n%s:%d\", fillcolor=\"%s\"];\n",
+				myID, pkgName, nodeName, nodeType, fileBase, node.Line, fillColor)
+		}
+
+		// Process children
+		for _, child := range node.Children {
+			childFullName := child.Package + "." + child.Name
+			childID, childExists := nodeMap[childFullName]
+
+			if !childExists {
+				childID = nextID
+				nodeMap[childFullName] = childID
+				nextID++
+
+				// Write child node
+				childName := strings.Replace(child.Name, "\"", "\\\"", -1)
+				childPkg := strings.Replace(child.Package, "\"", "\\\"", -1)
+				childFile := filepath.Base(child.File)
+
+				// Color nodes by package and type
+				fillColor := "lightblue" // Default for local package functions
+				if child.IsExternal {
+					fillColor = "lightgrey" // External functions
+				} else if child.Package != fn.Package {
+					fillColor = "lightgreen" // Functions from other packages in our module
+				}
+
+				// Add method/function indication
+				nodeType := "function"
+				if strings.Contains(child.Name, ".") {
+					nodeType = "method"
+				}
+
+				fmt.Fprintf(file, "  node%d [label=\"%s.%s\\n%s\\n%s:%d\", fillcolor=\"%s\"];\n",
+					childID, childPkg, childName, nodeType, childFile, child.Line, fillColor)
+			}
+
+			// Write edge
+			fmt.Fprintf(file, "  node%d -> node%d;\n", myID, childID)
+
+			// Recursively process children
+			writeDOT(child)
 		}
 	}
 
-	pkg, ok := ca.packages[pkgName]
-	if !ok {
-		return nil, fmt.Errorf("package not found: %s", pkgName)
-	}
+	writeDOT(fn)
 
-	// First pass: find and register all functions
-	ca.currentPkg = pkgName
-	ca.analyzeFunctions(pkg)
-
-	// Second pass: build the call tree
-	rootFunc, ok := ca.functionNodes[pkgName+"."+funcName]
-	if !ok {
-		return nil, fmt.Errorf("function not found: %s.%s", pkgName, funcName)
-	}
-
-	ca.analyzeCallExpressions(pkg, rootFunc)
-	return rootFunc, nil
+	// Close the DOT file
+	fmt.Fprintf(file, "}\n")
+	return nil
 }
 
-// analyzeFunctions finds all functions in a package and registers them
-func (ca *CodeAnalyzer) analyzeFunctions(pkg *ast.Package) {
-	for filename, file := range pkg.Files {
+// CallGraphAnalyzer analyzes Go code to build function call graphs
+type CallGraphAnalyzer struct {
+	fset          *token.FileSet
+	pkgs          map[string]*packages.Package
+	functionNodes map[string]*FunctionNode
+	moduleName    string
+	pathToPackage map[string]string
+}
+
+// NewCallGraphAnalyzer creates a new analyzer with the packages.Load config
+func NewCallGraphAnalyzer(moduleName string) *CallGraphAnalyzer {
+	return &CallGraphAnalyzer{
+		fset:          token.NewFileSet(),
+		functionNodes: make(map[string]*FunctionNode),
+		pkgs:          make(map[string]*packages.Package),
+		pathToPackage: make(map[string]string),
+		moduleName:    moduleName,
+	}
+}
+
+// LoadPackages loads packages using the x/tools/go/packages API
+func (ca *CallGraphAnalyzer) LoadPackages(modulePath string, patterns ...string) error {
+	config := &packages.Config{
+		Mode: packages.NeedName |
+			packages.NeedFiles |
+			packages.NeedSyntax |
+			packages.NeedTypes |
+			packages.NeedTypesInfo |
+			packages.NeedImports |
+			packages.NeedDeps,
+		Fset: ca.fset,
+		Dir:  modulePath,
+		Env:  append(os.Environ(), "GO111MODULE=on"),
+		// ParseFile can be customized if needed to handle build tags, etc.
+	}
+
+	var err error
+	pkgs, err := packages.Load(config, patterns...)
+	if err != nil {
+		return fmt.Errorf("error loading packages: %v", err)
+	}
+
+	if packages.PrintErrors(pkgs) > 0 {
+		// Continue with what we have, but warn the user
+		fmt.Println("Warning: Some packages had errors, analysis may be incomplete")
+	}
+
+	// Register all functions from loaded packages
+	for _, pkg := range pkgs {
+		ca.pathToPackage[pkg.Dir] = pkg.PkgPath
+		ca.pkgs[pkg.PkgPath] = pkg
+		ca.registerFunctions(pkg)
+	}
+
+	return nil
+}
+
+// registerFunctions finds and registers all functions in the loaded packages
+func (ca *CallGraphAnalyzer) registerFunctions(pkg *packages.Package) {
+	for _, file := range pkg.Syntax {
+		filename := ca.fset.Position(file.Pos()).Filename
+
 		ast.Inspect(file, func(n ast.Node) bool {
 			if funcDecl, ok := n.(*ast.FuncDecl); ok {
 				position := ca.fset.Position(funcDecl.Pos())
@@ -101,136 +234,359 @@ func (ca *CodeAnalyzer) analyzeFunctions(pkg *ast.Package) {
 				// Handle methods
 				if funcDecl.Recv != nil && len(funcDecl.Recv.List) > 0 {
 					var recvType string
-					switch t := funcDecl.Recv.List[0].Type.(type) {
-					case *ast.StarExpr:
-						if ident, ok := t.X.(*ast.Ident); ok {
-							recvType = "*" + ident.Name
+					recvExpr := funcDecl.Recv.List[0].Type
+
+					// Try to get the receiver type using type info
+					tv, ok := pkg.TypesInfo.Types[recvExpr]
+					if ok {
+						// Remove pointer if present
+						t := tv.Type
+						if ptr, ok := t.(*types.Pointer); ok {
+							t = ptr.Elem()
 						}
-					case *ast.Ident:
-						recvType = t.Name
+
+						// Get type name
+						if named, ok := t.(*types.Named); ok {
+							recvType = named.Obj().Name()
+						} else {
+							// Fallback to string representation
+							recvType = t.String()
+						}
+					} else {
+						// Fallback for when type info is not available
+						switch t := recvExpr.(type) {
+						case *ast.StarExpr:
+							if ident, ok := t.X.(*ast.Ident); ok {
+								recvType = ident.Name
+							}
+						case *ast.Ident:
+							recvType = t.Name
+						}
 					}
+
 					if recvType != "" {
 						funcName = recvType + "." + funcName
 					}
 				}
 
-				fullName := ca.currentPkg + "." + funcName
-				ca.functionNodes[fullName] = NewFunctionNode(funcName, filename, position.Line)
+				doc := ""
+				if funcDecl.Doc != nil {
+					doc = strings.TrimSpace(funcDecl.Doc.Text())
+				}
+
+				fullName := pkg.PkgPath + "." + funcName
+				isExternal := !strings.HasPrefix(pkg.PkgPath, ca.moduleName)
+				ca.functionNodes[fullName] = NewFunctionNode(funcName, pkg.PkgPath, filename, position.Line, isExternal, doc)
 			}
 			return true
 		})
 	}
 }
 
-// analyzeCallExpressions identifies function calls and builds the call tree
-func (ca *CodeAnalyzer) analyzeCallExpressions(pkg *ast.Package, rootNode *FunctionNode) {
-	visited := make(map[string]bool)
+// BuildFunctionCallTree builds a call tree starting from the specified function
+func (ca *CallGraphAnalyzer) BuildFunctionCallTree(pkgPath, funcName string, visited map[string]bool) (*FunctionNode, error) {
+	pkgName, ok := ca.pathToPackage[pkgPath]
 
-	var analyzeNode func(node *FunctionNode)
+	if !ok {
+		return nil, fmt.Errorf("Package not found: %s", pkgPath)
+	}
 
-	analyzeNode = func(node *FunctionNode) {
-		fullName := ca.currentPkg + "." + node.Name
-		if visited[fullName] {
-			return
+	fullFuncName := pkgName + "." + funcName
+	// for name, node := range ca.functionNodes {
+	// 	println(name + "    " + node.Package)
+	// }
+
+	rootNode, ok := ca.functionNodes[fullFuncName]
+	if !ok {
+		return nil, fmt.Errorf("function not found: %s", fullFuncName)
+	}
+
+	// Build the call tree
+	ca.analyzeFunction(rootNode, visited, 0)
+
+	return rootNode, nil
+}
+
+// analyzeFunction analyzes a function and its callees recursively
+func (ca *CallGraphAnalyzer) analyzeFunction(node *FunctionNode, visited map[string]bool, depth int) bool {
+	if depth > 3 {
+		return false
+	}
+	fullName := node.Package + "." + node.Name
+	if visited[fullName] {
+		return false // Already processed
+	}
+	visited[fullName] = true
+
+	// Find the package that contains this function
+	var pkg *packages.Package
+	for _, p := range ca.pkgs {
+		if p.PkgPath == node.Package {
+			pkg = p
+			break
 		}
-		visited[fullName] = true
+	}
 
-		// Find function declaration
-		var funcDecl *ast.FuncDecl
-		for _, file := range pkg.Files {
-			ast.Inspect(file, func(n ast.Node) bool {
+	if pkg == nil {
+		// Package not loaded or external
+		return false
+	}
+
+	// Find the function declaration
+	var funcDecl *ast.FuncDecl
+	var cm ast.CommentMap
+	for _, f := range pkg.Syntax {
+		filename := ca.fset.Position(f.Pos()).Filename
+		if filename == node.File {
+			ast.Inspect(f, func(n ast.Node) bool {
 				if fd, ok := n.(*ast.FuncDecl); ok {
-					// Check if this is the function we're looking for
-					// Handle both regular functions and methods
-					var funcName string
-					if fd.Recv != nil && len(fd.Recv.List) > 0 {
-						var recvType string
-						switch t := fd.Recv.List[0].Type.(type) {
-						case *ast.StarExpr:
-							if ident, ok := t.X.(*ast.Ident); ok {
-								recvType = "*" + ident.Name
-							}
-						case *ast.Ident:
-							recvType = t.Name
-						}
-						if recvType != "" {
-							funcName = recvType + "." + fd.Name.Name
-						}
-					} else {
-						funcName = fd.Name.Name
-					}
+					position := ca.fset.Position(fd.Pos())
+					if position.Line == node.Line {
 
-					if funcName == node.Name {
+						cm = ast.NewCommentMap(ca.fset, f, f.Comments)
 						funcDecl = fd
 						return false
 					}
 				}
 				return true
 			})
-			if funcDecl != nil {
-				break
-			}
 		}
-
-		if funcDecl == nil {
-			return
+		if funcDecl != nil {
+			break
 		}
+	}
 
-		// Find function calls inside this function
-		ast.Inspect(funcDecl, func(n ast.Node) bool {
-			if callExpr, ok := n.(*ast.CallExpr); ok {
-				if selExpr, ok := callExpr.Fun.(*ast.SelectorExpr); ok {
-					if ident, ok := selExpr.X.(*ast.Ident); ok {
-						// This is a method call or a function call from another package
-						calledFuncName := ident.Name + "." + selExpr.Sel.Name
-						position := ca.fset.Position(callExpr.Pos())
+	if funcDecl == nil {
+		return false
+	}
 
-						// Check if we know this function
-						if childNode, exists := ca.functionNodes[ca.currentPkg+"."+calledFuncName]; exists {
-							node.AddChild(childNode)
-							analyzeNode(childNode)
-						} else {
-							// External function call
-							childNode := NewFunctionNode(calledFuncName, position.Filename, position.Line)
-							node.AddChild(childNode)
+	// Analyze function body for calls
+	ast.Inspect(funcDecl, func(n ast.Node) bool {
+		if callExpr, ok := n.(*ast.CallExpr); ok {
+			position := ca.fset.Position(callExpr.Pos())
+
+			// Get type info for the call
+			tv, ok := pkg.TypesInfo.Types[callExpr.Fun]
+			if ok {
+				// Try to get function being called using type info
+				if sig, ok := tv.Type.(*types.Signature); ok {
+					if fn := sig.Recv(); fn != nil {
+
+						// This is a method call, get receiver type
+						t := fn.Type()
+						var methodName string
+
+						// Extract method name from AST
+						if selExpr, ok := callExpr.Fun.(*ast.SelectorExpr); ok {
+							methodName = selExpr.Sel.Name
+
+							// Get the receiver type name
+							var recvType string
+							if named, ok := t.(*types.Named); ok {
+								recvType = named.Obj().Name()
+							} else {
+								// Fallback
+								recvType = t.String()
+							}
+
+							qualifiedName := recvType + "." + methodName
+							calleePkgPath := pkg.PkgPath // Assume same package
+
+							// Try to find the method in loaded packages
+							calleeFullName := calleePkgPath + "." + qualifiedName
+							if calleeNode, exists := ca.functionNodes[calleeFullName]; exists {
+								addChild := ca.analyzeFunction(calleeNode, visited, depth+1)
+								if addChild {
+									node.AddChild(calleeNode)
+								}
+							} else {
+
+								doc := ""
+								if groups := cm[selExpr]; len(groups) > 0 {
+									for _, cg := range groups {
+										doc = doc + " - " + cg.Text() + "\n"
+									}
+								}
+
+								// Create placeholder for method we can't find
+								isExternal := !strings.HasPrefix(calleePkgPath, ca.moduleName)
+								calleeNode := NewFunctionNode(qualifiedName, calleePkgPath, position.Filename, position.Line, isExternal, doc)
+								node.AddChild(calleeNode)
+							}
 						}
-					}
-				} else if ident, ok := callExpr.Fun.(*ast.Ident); ok {
-					// This is a direct function call
-					calledFuncName := ident.Name
-					position := ca.fset.Position(callExpr.Pos())
-
-					// Check if we know this function
-					if childNode, exists := ca.functionNodes[ca.currentPkg+"."+calledFuncName]; exists {
-						node.AddChild(childNode)
-						analyzeNode(childNode)
-					} else {
-						// External function call or built-in
-						childNode := NewFunctionNode(calledFuncName, position.Filename, position.Line)
-						node.AddChild(childNode)
 					}
 				}
 			}
-			return true
-		})
-	}
 
-	analyzeNode(rootNode)
-}
+			// Fallback to AST-based analysis when type info doesn't help
+			switch funExpr := callExpr.Fun.(type) {
+			case *ast.SelectorExpr:
 
-func GetCodeFlow(dir, function string) (*FunctionNode, error) {
-	analyzer := NewCodeAnalyzer()
-	err := analyzer.ParseDirectory(dir)
-	if err != nil {
-		fmt.Printf("Error parsing directory: %v\n", err)
-		return nil, fmt.Errorf("Error parsing directory: %v\n", err)
-	}
+				var selectors []string
+				var currentExpr ast.Expr = funExpr
+				var ident *ast.Ident
+				for {
+					if sel, ok := currentExpr.(*ast.SelectorExpr); ok {
+						selectors = append([]string{sel.Sel.Name}, selectors...)
+						currentExpr = sel.X
+						ident = sel.Sel
+					} else if ident, ok := currentExpr.(*ast.Ident); ok {
+						selectors = append([]string{ident.Name}, selectors...)
+						break
+					} else {
+						break
+					}
+				}
 
-	functionTree, err := analyzer.BuildFunctionCallTree(function)
-	if err != nil {
-		fmt.Printf("Error building function call tree: %v\n", err)
-		return nil, fmt.Errorf("Error building function call tree: %v\n", err)
-	}
+				if len(selectors) < 3 {
+					ident, ok = funExpr.X.(*ast.Ident)
+					if !ok {
+						ident = nil
+					}
+				}
 
-	return functionTree, nil
+				if ident != nil {
+
+					if slices.Contains(ignoreList, ident.Name) {
+						return true
+					}
+
+					calledName := funExpr.Sel.Name
+					xName := ident.Name
+
+					// Check if this is an imported package
+					var calleePkg *packages.Package
+					for _, imp := range pkg.Imports {
+						if imp.Name == xName || filepath.Base(imp.PkgPath) == xName {
+							calleePkg = imp
+							break
+						}
+					}
+
+					if calleePkg != nil {
+						// It's a function from another package
+						calleePkgPath := calleePkg.PkgPath
+						calleeFullName := calleePkgPath + "." + calledName
+
+						if calleeNode, exists := ca.functionNodes[calleeFullName]; exists {
+							addChild := ca.analyzeFunction(calleeNode, visited, depth+1)
+							if addChild {
+								node.AddChild(calleeNode)
+							}
+						} else {
+
+							doc := ""
+							if groups := cm[funExpr]; len(groups) > 0 {
+								for _, cg := range groups {
+									doc = doc + " - " + cg.Text() + "\n"
+								}
+							}
+
+							// Create a placeholder for functions we can't find
+							isExternal := !strings.HasPrefix(calleePkgPath, ca.moduleName)
+							calleeNode := NewFunctionNode(calledName, calleePkgPath, position.Filename, position.Line, isExternal, doc)
+							node.AddChild(calleeNode)
+						}
+					} else {
+
+						// It's probably a method call on a local variable
+						// Use object use information to try to determine type
+						obj := pkg.TypesInfo.Uses[ident]
+						if obj != nil {
+							var typeName string
+							var pkgName string
+							if v, ok := obj.(*types.Var); ok {
+								t := v.Type()
+
+								// Unwrap pointer if needed
+								if ptr, ok := t.(*types.Pointer); ok {
+									t = ptr.Elem()
+								}
+
+								// Try to get type name
+								if named, ok := t.(*types.Named); ok {
+									typeName = named.Obj().Name()
+									if named.Obj().Pkg() != nil {
+										pkgName = named.Obj().Pkg().Path()
+									}
+								} else {
+									typeName = t.String()
+								}
+
+								if typeName != "" {
+									// println("exists " + typeName + "-" + calledName + "-" + pkg.PkgPath + "-" + pkgName)
+
+									qualifiedName := typeName + "." + calledName
+									calleeFullName := pkgName + "." + qualifiedName
+
+									if calleeNode, exists := ca.functionNodes[calleeFullName]; exists {
+										addChild := ca.analyzeFunction(calleeNode, visited, depth+1)
+										if addChild {
+											node.AddChild(calleeNode)
+										}
+
+									} else {
+
+										doc := ""
+										if groups := cm[funExpr]; len(groups) > 0 {
+											for _, cg := range groups {
+												doc = doc + " - " + cg.Text() + "\n"
+											}
+										}
+
+										// Create placeholder for methods we can't resolve
+										calleeNode := NewFunctionNode(qualifiedName, pkgName, position.Filename, position.Line, false, doc)
+										node.AddChild(calleeNode)
+									}
+									return true
+								}
+							}
+						}
+
+						doc := ""
+						if groups := cm[funExpr]; len(groups) > 0 {
+							for _, cg := range groups {
+								doc = doc + " - " + cg.Text() + "\n"
+							}
+						}
+
+						// If we can't determine the type, create a generic placeholder
+						placeholder := NewFunctionNode(xName+"."+calledName, pkg.PkgPath, position.Filename, position.Line, false, doc)
+						node.AddChild(placeholder)
+					}
+				}
+
+			case *ast.Ident:
+				// Direct function call in the same package
+				calledName := funExpr.Name
+				calleeFullName := pkg.PkgPath + "." + calledName
+				obj := pkg.TypesInfo.Uses[funExpr]
+				if _, isBuiltin := obj.(*types.Builtin); isBuiltin {
+					return true
+				}
+
+				if calleeNode, exists := ca.functionNodes[calleeFullName]; exists {
+					addChild := ca.analyzeFunction(calleeNode, visited, depth+1)
+					if addChild {
+						node.AddChild(calleeNode)
+					}
+				} else {
+
+					doc := ""
+					if groups := cm[funExpr]; len(groups) > 0 {
+						for _, cg := range groups {
+							doc = doc + " - " + cg.Text() + "\n"
+						}
+					}
+
+					// Create placeholder
+					calleeNode := NewFunctionNode(calledName, pkg.PkgPath, position.Filename, position.Line, false, doc)
+					node.AddChild(calleeNode)
+				}
+			}
+		}
+		return true
+	})
+
+	return true
 }

@@ -2,6 +2,7 @@ package logic
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,6 +44,7 @@ type PackageManager struct {
 	name        string
 	dirPath     string
 	ProjectInfo utils.GoProjectInfo
+	ca          *utils.CallGraphAnalyzer
 }
 
 // DirectoryInfo represents structure of a directory or file
@@ -55,14 +57,48 @@ type DirectoryInfo struct {
 
 // NewPackageManager
 func NewPackageManager(name, dirPath string) (PackageManager, error) {
+	var err error
 	projectInfo := utils.ValidateGoProject(dirPath)
 	if !projectInfo.IsGoProject {
 		return PackageManager{}, errors.New("not a go project")
 	}
+	ca := utils.NewCallGraphAnalyzer(dirPath)
+
+	dirPath, err = filepath.Abs(dirPath)
+	if err != nil {
+		return PackageManager{}, fmt.Errorf("Error : ", err)
+	}
+
+	allPaths := []string{}
+	filepath.WalkDir(dirPath, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if strings.Contains(path, "vendor") {
+				return nil
+			}
+
+			if strings.Contains(path, ".git") {
+				return nil
+			}
+			allPaths = append(allPaths, path)
+		}
+		return nil
+	})
+
+	fmt.Println("Loading packages...")
+
+	err = ca.LoadPackages(dirPath, allPaths...)
+	if err != nil {
+		return PackageManager{}, err
+	}
+
 	return PackageManager{
 		name:        name,
 		dirPath:     dirPath,
 		ProjectInfo: projectInfo,
+		ca:          ca,
 	}, nil
 }
 
@@ -71,9 +107,23 @@ func (p PackageManager) GetTreeStructure(depth int) DirectoryInfo {
 	return p.getDirectoryStructure(p.dirPath, p.dirPath, depth, 0)
 }
 
-func (p PackageManager) GetCodeFlow(path, function string) (*utils.FunctionNode, error) {
-	dir := filepath.Dir(path)
-	return utils.GetCodeFlow(dir, function)
+func (p PackageManager) GetCodeFlow(path, functionName string) (*utils.FunctionNode, error) {
+	dir, err := filepath.Abs(path)
+	if err != nil {
+		fmt.Printf("Error building function call tree: %v\n", err)
+		return nil, fmt.Errorf("Error building function call tree: %v\n", err)
+	}
+
+	dir = filepath.Dir(dir)
+	fmt.Println("Building function call tree...")
+	visited := make(map[string]bool)
+	functionTree, err := p.ca.BuildFunctionCallTree(dir, functionName, visited)
+	if err != nil {
+		fmt.Printf("Error building function call tree: %v\n", err)
+		return nil, fmt.Errorf("Error building function call tree: %v\n", err)
+	}
+
+	return functionTree, nil
 }
 
 // getDirectoryStructure recursively builds the directory structure
