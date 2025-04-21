@@ -425,26 +425,40 @@ const Dashboard = () => {
           setErrorMessage={setErrorMessage}
         />
            {/* ───── View Mode Toggle ───── */}
-        <div className="flex space-x-2 px-6 py-3 bg-gray-50 border-b">
-          <button
-            onClick={() => setViewMode("stats")}
-            className={`px-4 py-2 rounded 
-              ${viewMode === "stats" 
-                  ? "bg-blue-500 text-white" 
-                  : "bg-white text-gray-700 hover:bg-gray-100"}`}
-          >
-            Stats
-          </button>
-          <button
-            onClick={() => setViewMode("explorer")}
-            className={`px-4 py-2 rounded 
-              ${viewMode === "explorer" 
-                  ? "bg-blue-500 text-white" 
-                  : "bg-white text-gray-700 hover:bg-gray-100"}`}
-          >
-            Explorer
-          </button>
-        </div>
+            <div className="flex items-center px-6 py-3 border-b">
+              {/* Left label */}
+              <span className="text-gray-700 mr-3 select-none">Stats</span>
+
+              {/* The switch */}
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={viewMode === "explorer"}
+                  onChange={() =>
+                    setViewMode(viewMode === "stats" ? "explorer" : "stats")
+                  }
+                />
+                <div
+                  className="
+                    w-11 h-6 rounded-full
+                    bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300
+                    peer-checked:bg-blue-600
+                    transition-colors duration-200
+                    relative
+                    after:content-[''] after:absolute after:top-0.5 after:left-[2px]
+                    after:bg-white after:border after:rounded-full
+                    after:h-5 after:w-5 after:transition-transform
+                    peer-checked:after:translate-x-full
+                  "
+                />
+              </label>
+
+              {/* Right label */}
+              <span className="text-gray-700 ml-3 select-none">Explorer</span>
+            </div>
+
+
       </div>
 
       <div className="w-full h-screen pt-16 flex overflow-hidden">
@@ -563,19 +577,43 @@ const Dashboard = () => {
               viewMode !== "stats" ? (
                 <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1 overflow-auto">
                   <h2 className="text-lg font-semibold mb-2">Function Description</h2>
-                  <button onClick={toggleLinting}
-                      className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
-                      {lintingEnabled ? 'Disable Linting' : 'Enable Linting'}
-                    </button>
-
                   {/* Optional content here */}
                   <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} focusLine={focusedLine} />
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1 overflow-auto">
-                  <h2 className="text-lg font-semibold mb-2">File Viewer</h2>
-                  <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} />
+                <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1 overflow-auto flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold">File Viewer</h2>
+
+                    {/* Beautiful toggle switch */}
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={lintingEnabled}
+                        onChange={toggleLinting}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer 
+                                      peer-checked:bg-blue-600 transition-colors duration-200
+                                      relative after:content-[''] after:absolute after:top-0.5 after:left-[2px]
+                                      after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-transform
+                                      peer-checked:after:translate-x-full">
+                      </div>
+                      <span className="ml-3 text-sm font-medium text-gray-700">
+                        {lintingEnabled ? 'Linting On' : 'Linting Off'}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="flex-1 overflow-auto">
+                    <LintingCodeViewer
+                      fileContent={fileContent1}
+                      lintErrors={getLintErrorsForFile(lintIssues, filepath)}
+                      lintingEnabled={lintingEnabled}
+                    />
+                  </div>
                 </div>
+
               )}
             </div>
           </div>

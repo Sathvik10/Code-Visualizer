@@ -14,7 +14,16 @@ const CodeFlowTree = ({ data, onNodeClick }) => {
       requestAnimationFrame(() => {
         if (!entries.length) return;
         const { width, height } = entries[0].contentRect;
-        setDimensions({ width, height });
+        // setDimensions({ width, height });
+
+        setDimensions(prev => {
+          // only update if the size really changed
+          if (prev.width === width && prev.height === height) {
+            return prev;
+          }
+          return { width, height };
+        });
+
       });
     });
 

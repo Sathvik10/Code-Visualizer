@@ -118,24 +118,44 @@ export const drawPieChart = (container, data) => {
 
 const PieChart = ({ data, title }) => {
   const chartRef = useRef();
+  // track the last observed size
+  const sizeRef = useRef({ width: 0, height: 0 });
 
   useEffect(() => {
     const container = chartRef.current;
     if (!container) return;
-  
+
+    // draw (or redraw) the pie chart
     const renderChart = () => {
-      // Clear previous chart
-      drawPieChart(container, data)
+      drawPieChart(container, data);
     };
-  
-    const resizeObserver = new ResizeObserver(() => {
-      renderChart();
+
+    let rafId = null;
+    const resizeObserver = new ResizeObserver((entries) => {
+      // debounce so we only render once per frame
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const { width, height } = entries[0].contentRect;
+        // bail out if nothing really changed
+        if (
+          width === sizeRef.current.width &&
+          height === sizeRef.current.height
+        ) {
+          return;
+        }
+        sizeRef.current = { width, height };
+        renderChart();
+      });
     });
-  
+
     resizeObserver.observe(container);
+    // initial draw
     renderChart();
-  
-    return () => resizeObserver.disconnect();
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      resizeObserver.disconnect();
+    };
   }, [data]);
 
   return (
@@ -143,7 +163,8 @@ const PieChart = ({ data, title }) => {
       {title && <h3 style={{ textAlign: "center" }}>{title}</h3>}
       <svg ref={chartRef} style={{ width: "90%", height: "90%" }} />
     </div>
-  );  
+  );
 };
+
 
 export default PieChart;
