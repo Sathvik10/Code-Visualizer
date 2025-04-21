@@ -60,7 +60,7 @@ const CodeFlowTree = ({ data, onNodeClick}) => {
       .x((d) => d.y)
       .y((d) => d.x);
 
-    root.sort((a, b) => d3.ascending(a.data.name, b.data.name));
+    // root.sort((a, b) => d3.ascending(a.data.name, b.data.name));
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
