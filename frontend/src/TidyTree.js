@@ -64,6 +64,20 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
+    if (isCodeFlow) {
+      svg.append("defs").append("marker")
+      .attr("id", "arrowhead")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 10)
+      .attr("refY", 0)
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("orient", "auto")
+      .attr("fill", "#555")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5");
+    }
+
     const gZoom = svg.append("g");
     const gLink = gZoom
       .append("g")
@@ -138,11 +152,13 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
         });
 
       // Adjust node appearance based on children state
-      nodeEnter
-        .append("circle")
-        .attr("r", 3.5)
-        .attr("fill", (d) => (d._children ? "#555" : "#999"))
-        .attr("stroke-width", 10);
+      if (!isCodeFlow) {
+        nodeEnter
+          .append("circle")
+          .attr("r", 3.5)
+          .attr("fill", (d) => (d._children ? "#555" : "#999"))
+          .attr("stroke-width", 10);
+      }
 
       // Calculate text padding based on node depth and expanded state
       nodeEnter
@@ -211,7 +227,16 @@ const TidyTree = ({ data, onNodeClick, isCodeFlow }) => {
           return diagonal({ source: o, target: o });
         });
 
-      link.merge(linkEnter).transition().duration(duration).attr("d", diagonal);
+      if (isCodeFlow) {
+        linkEnter.attr("marker-end", "url(#arrowhead)");
+      }
+
+      if (!isCodeFlow) {
+        link.merge(linkEnter).transition().duration(duration).attr("d", diagonal)
+      }
+      else {
+        link.merge(linkEnter).transition().duration(duration).attr("d", diagonal).attr("marker-end", "url(#arrowhead)");
+      }
 
       link
         .exit()
