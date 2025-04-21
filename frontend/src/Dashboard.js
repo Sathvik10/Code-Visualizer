@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, use } from "react";
 import PieChart from "./PieChart";
 import { useNavigate } from "react-router-dom";
 import "./DashboardPage.css";
@@ -9,7 +9,6 @@ import Navbar from "./components/NavBar";
 import LintIssuesByLinter from "./LintIssueTracker";
 import LintingCodeViewer from "./LintingCodeViewer";
 import FunctionTable from "./FunctionTable";
-import { line } from "d3";
 
 const FunctionDescriptionPanel = ({
   fileContent1,
@@ -87,6 +86,38 @@ const Dashboard = () => {
 
   // toggle handler
   const toggleLinting = () => setLintingEnabled(enabled => !enabled);
+
+  // ─── Sidebar collapse & search state ─────────────────────────
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [sidebarSearch, setSidebarSearch] = useState("");
+  const [viewMode, setViewMode] = useState("stats"); // "stats" | "explorer"
+
+  // near the top of your Dashboard() before any useEffects:
+  const isFileSelected = filepath && filepath.endsWith(".go");
+
+
+  // Recursively filter the tree by name
+  const filterTree = (node, query) => {
+    if (!query) return node;
+    const nameMatches = node.name.toLowerCase().includes(query.toLowerCase());
+    const filteredChildren = (node.children || [])
+      .map(child => filterTree(child, query))
+      .filter(Boolean);
+    if (nameMatches || filteredChildren.length) {
+      return { ...node, children: filteredChildren };
+    }
+    return null;
+  };
+  const filteredTreeData = useMemo(() => {
+    return filterTree(treeStructureData, sidebarSearch) || { name: "No results", children: [] };
+  }, [treeStructureData, sidebarSearch]);
+ 
+
+  useEffect(() => {
+    if(!isFileSelected){
+      setFocusedLine(-1)
+    }
+  }, [isFileSelected])
 
   useEffect(()=>{
     if (fileViewerPath.endsWith(".go")){
@@ -394,82 +425,164 @@ const Dashboard = () => {
           errorMessage={errorMessage}
           setErrorMessage={setErrorMessage}
         />
+           {/* ───── View Mode Toggle ───── */}
+        <div className="flex space-x-2 px-6 py-3 bg-gray-50 border-b">
+          <button
+            onClick={() => setViewMode("stats")}
+            className={`px-4 py-2 rounded 
+              ${viewMode === "stats" 
+                  ? "bg-blue-500 text-white" 
+                  : "bg-white text-gray-700 hover:bg-gray-100"}`}
+          >
+            Stats
+          </button>
+          <button
+            onClick={() => setViewMode("explorer")}
+            className={`px-4 py-2 rounded 
+              ${viewMode === "explorer" 
+                  ? "bg-blue-500 text-white" 
+                  : "bg-white text-gray-700 hover:bg-gray-100"}`}
+          >
+            Explorer
+          </button>
+        </div>
       </div>
 
       <div className="w-full h-screen pt-16 flex overflow-hidden">
         {/* Fixed Tree Column */}
-        <div className="w-1/4 bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200 sticky left-0 z-10">
+        {/* <div className="w-1/4 bg-white rounded-2xl p-4 h-full overflow-hidden border border-gray-200 sticky left-0 z-10">
           <TidyTree data={treeStructureData} onNodeClick={handleNodeClick} />
+        </div> */}
+
+        {/* ─── Streamlined Sidebar ─────────────────────────────────── */}
+        <div
+          className={`
+            flex-none
+            ${isSidebarOpen ? "w-1/4 p-4" : "w-8 p-2"}
+            bg-white rounded-2xl
+            h-full overflow-hidden
+            border border-gray-200
+            sticky left-0 z-10
+            transition-all duration-300 flex flex-col
+          `}
+        >
+          {/* always-visible toggle handle */}
+          <div
+            className={`flex items-center mb-2 /${isSidebarOpen ? "justify-end" : "justify-center"}`}
+          >
+            <button
+              onClick={() => setIsSidebarOpen(open => !open)}
+              className="p-1 rounded bg-gray-200 hover:bg-gray-300"
+            >
+              {isSidebarOpen ? "«" : "»"}
+            </button>
+          </div>
+
+          {/* only show searchtree when open */}
+          {isSidebarOpen && (
+            <>
+              <input
+                type="text"
+                className="w-full mb-2 px-2 py-1 border rounded"
+                placeholder="Search files..."
+                value={sidebarSearch}
+                onChange={e => setSidebarSearch(e.target.value)}
+              />
+              <TidyTree data={filteredTreeData} onNodeClick={handleNodeClick} />
+            </>
+          )}
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="w-3/4 h-full overflow-y-auto">
-          <div className="flex gap-4 p-4 w-full">
+
+        {
+        <div className="flex-1 flex flex-col h-full overflow-y-auto transition-all duration-300">
+          <div className="flex gap-4 p-4 h-full">
+            
             {/* Column 1 */}
-            <div className="w-1/3 flex flex-col gap-4">
-              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px]">
-                <FunctionTable 
-                  functions={filepath.endsWith(".go") ? functions : []}
-                  onFunctionClick={handleFunctionClick}
-                  selectedFunction={selectedFunction}
-                />
-              </div>
-              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
-                <PieChart data={fileChartData} title={"File-Level Contributions"} />
-              </div>
-              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
-                <CircularPacking data={chartData} title={"Overall Contributions"} />
-              </div>
+            <div className="w-1/3 flex flex-col gap-4 h-full">
+              {
+                viewMode === "stats" ? 
+                (<>
+                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+                    <PieChart data={fileChartData} title={"File-Level Contributions"} />
+                  </div>
+                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+                    <CircularPacking data={chartData} title={"Overall Contributions"} />
+                  </div>
+                </>) :
+                (
+                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+                    <FunctionTable 
+                      functions={filepath.endsWith(".go") ? functions : []}
+                      onFunctionClick={handleFunctionClick}
+                      selectedFunction={selectedFunction}
+                    />
+                  </div>
+                )
+              }
             </div>
 
             {/* Column 2 */}
-            <div className="w-1/3 flex flex-col gap-4">
-              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px]">
-                <h2 className="text-lg font-semibold">Function Tree Flow</h2>
-                <div className="w-full h-full overflow-hidden">
-                  {codeFlowTree === null ? (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-gray-500">Select a function to view its flow</p>
+            <div className="w-1/3 flex flex-col gap-4 h-full">
+              {
+                viewMode !== "stats" ? (
+                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+                    <h2 className="text-lg font-semibold">Function Tree Flow</h2>
+                    <div className="w-full h-full overflow-hidden">
+                      {codeFlowTree === null ? (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-gray-500">Select a function to view its flow</p>
+                        </div>
+                      ) : (
+                        <CodeFlowTree 
+                          data={codeFlowTree} 
+                          onNodeClick={handleCodeFlowNodeClicked}/>
+                      )}
                     </div>
+                  </div>
                   ) : (
-                    <CodeFlowTree 
-                      data={codeFlowTree} 
-                      onNodeClick={handleCodeFlowNodeClicked}/>
-                  )}
-                </div>
-              </div>
-              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
-                <LintIssuesByLinter 
-                  data={lintIssues} 
-                  title={`Lint issues in ${getRelativePath(filepath) || "Repo"}`} 
-                  filterPath={getRelativePath(filepath)} 
-                  useBarChart={false} 
-                />
-              </div>
-              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[300px]">
-                <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
-              </div>
+                  <>
+                    <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+                      <LintIssuesByLinter 
+                        data={lintIssues} 
+                        title={`Lint issues in ${getRelativePath(filepath) || "Repo"}`} 
+                        filterPath={getRelativePath(filepath)} 
+                        useBarChart={false} 
+                      />
+                    </div>
+                    <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+                      <LintIssuesByLinter data={lintIssues} title={'Lint Issues by Linter'} />
+                    </div>
+                  </>
+              )}
             </div>
 
             {/* Column 3 */}
-            <div className="w-1/3 flex flex-col gap-4">
-              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px] overflow-auto">
-                <h2 className="text-lg font-semibold mb-2">Function Description</h2>
-                <button onClick={toggleLinting}
-                    className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
-                    {lintingEnabled ? 'Disable Linting' : 'Enable Linting'}
-                  </button>
+            <div className="w-1/3 flex flex-col gap-4 h-full">
+            {
+              viewMode !== "stats" ? (
+                <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1 overflow-auto">
+                  <h2 className="text-lg font-semibold mb-2">Function Description</h2>
+                  <button onClick={toggleLinting}
+                      className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition">
+                      {lintingEnabled ? 'Disable Linting' : 'Enable Linting'}
+                    </button>
 
-                {/* Optional content here */}
-                <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} focusLine={focusedLine} lintingEnabled={lintingEnabled}/>
-              </div>
-              <div className="bg-white rounded-2xl p-4 border border-gray-200 h-[600px] overflow-auto">
-                <h2 className="text-lg font-semibold mb-2">File Viewer</h2>
-                <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} />
-              </div>
+                  {/* Optional content here */}
+                  <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} focusLine={focusedLine} />
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1 overflow-auto">
+                  <h2 className="text-lg font-semibold mb-2">File Viewer</h2>
+                  <LintingCodeViewer fileContent={fileContent1} lintErrors={getLintErrorsForFile(lintIssues, filepath)} />
+                </div>
+              )}
             </div>
           </div>
         </div>
+        
+          }
       </div>
     </>
   );
