@@ -34,7 +34,7 @@ func (p PackageHandler) addPackage(filePath, name string) (string, error) {
 	// Check if file exists
 	info, err := os.Stat(cleanPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to stat in addpackage %s %v", cleanPath, err)
 	}
 
 	// Check if it's a directory
