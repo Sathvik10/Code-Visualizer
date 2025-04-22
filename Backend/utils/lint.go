@@ -48,7 +48,7 @@ func RunGolangCILint(repoPath string) (LintIssues, error) {
 	if err != nil {
 		// Execute golangci-lint with JSON output
 		cmd := exec.Command(
-			"golangci-lint", "run",
+			"golangci-lint", "-c", "code-analyser.golangci.yml", "run",
 			"./...", // Check all packages in the module
 		)
 		cmd.Dir = repoPath
@@ -153,7 +153,7 @@ output:
       path: %s
 `, outputpath)
 
-	configPath := filepath.Join(repoPath, ".golangci.yml")
+	configPath := filepath.Join(repoPath, "code-analyser.golangci.yml")
 
 	// Check if config already exists
 	if _, err := os.Stat(configPath); err == nil {
