@@ -24,6 +24,7 @@ type FunctionNode struct {
 	Doc        string
 	Children   []*FunctionNode
 	IsExternal bool // Whether this function is from an external package we couldn't analyze
+	IsAnalysed bool
 }
 
 // NewFunctionNode creates a new function node
@@ -36,6 +37,7 @@ func NewFunctionNode(name, pkg, file string, line int, isExternal bool, doc stri
 		Children:   []*FunctionNode{},
 		IsExternal: isExternal,
 		Doc:        doc,
+		IsAnalysed: false,
 	}
 }
 
@@ -192,8 +194,14 @@ func (ca *CallGraphAnalyzer) BuildFunctionCallTree(pkgPath, funcName string, vis
 		return nil, fmt.Errorf("function not found: %s", fullFuncName)
 	}
 
+	if rootNode.IsAnalysed {
+		return rootNode, nil
+	}
+
 	// Build the call tree
 	ca.analyzeFunction(rootNode, visited, 0)
+
+	rootNode.IsAnalysed = true
 
 	return rootNode, nil
 }
@@ -208,6 +216,10 @@ func (ca *CallGraphAnalyzer) analyzeFunction(node *FunctionNode, visited map[str
 		return false // Already processed
 	}
 	visited[fullName] = true
+
+	if node.IsAnalysed {
+		return true
+	}
 
 	// Find the package that contains this function
 	var pkg *packages.Package
