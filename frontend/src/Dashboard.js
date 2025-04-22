@@ -679,6 +679,7 @@ const Dashboard = () => {
 								{viewMode !== "stats" ? (
 									<>
 										<ChartContainer title={"Function Tree Flow"}
+											childrenHeight="h-full"
 											onExpand={()=> openModal(
 												"Function Tree Flow",
 												GetCodeFlowTree(),

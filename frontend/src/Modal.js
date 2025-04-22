@@ -31,7 +31,8 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
 
 
 // In the ChartContainer component
-export const ChartContainer = ({ title, children, onExpand }) => {
+export const ChartContainer = ({ title, children, onExpand, childrenHeight = "h-64" }) => {
+  const cClass = "w-full overflow-hidden " + childrenHeight
   return (
     <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
       <div className="flex justify-between items-center mb-2">
@@ -47,7 +48,7 @@ export const ChartContainer = ({ title, children, onExpand }) => {
         </button>
       </div>
       {/* Change from h-[calc(100%-2rem)] to a fixed height */}
-      <div className="w-full h-64 overflow-hidden"> {/* Use h-64 or another appropriate fixed height */}
+      <div className={cClass}> {/* Use h-64 or another appropriate fixed height */}
         {children}
       </div>
     </div>

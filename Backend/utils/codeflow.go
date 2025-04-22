@@ -50,6 +50,11 @@ func (fn *FunctionNode) AddChild(child *FunctionNode) {
 	fn.Children = append(fn.Children, child)
 }
 
+func (fn *FunctionNode) AddRecursiveChildNode(child *FunctionNode, position int) {
+	childNode := NewFunctionNode(child.Name, child.Package, child.File, position, child.IsExternal, child.Doc)
+	fn.Children = append(fn.Children, childNode)
+}
+
 // CallGraphAnalyzer analyzes Go code to build function call graphs
 type CallGraphAnalyzer struct {
 	fset          *token.FileSet
@@ -284,6 +289,8 @@ func (ca *CallGraphAnalyzer) analyzeFunction(node *FunctionNode, visited map[str
 								addChild := ca.analyzeFunction(calleeNode, visited, depth+1)
 								if addChild {
 									node.AddChild(calleeNode)
+								} else {
+									node.AddRecursiveChildNode(calleeNode, position.Line)
 								}
 							} else {
 
@@ -358,6 +365,8 @@ func (ca *CallGraphAnalyzer) analyzeFunction(node *FunctionNode, visited map[str
 							addChild := ca.analyzeFunction(calleeNode, visited, depth+1)
 							if addChild {
 								node.AddChild(calleeNode)
+							} else {
+								node.AddRecursiveChildNode(calleeNode, position.Line)
 							}
 						} else {
 
@@ -409,6 +418,8 @@ func (ca *CallGraphAnalyzer) analyzeFunction(node *FunctionNode, visited map[str
 										addChild := ca.analyzeFunction(calleeNode, visited, depth+1)
 										if addChild {
 											node.AddChild(calleeNode)
+										} else {
+											node.AddRecursiveChildNode(calleeNode, position.Line)
 										}
 
 									} else {
@@ -455,6 +466,8 @@ func (ca *CallGraphAnalyzer) analyzeFunction(node *FunctionNode, visited map[str
 					addChild := ca.analyzeFunction(calleeNode, visited, depth+1)
 					if addChild {
 						node.AddChild(calleeNode)
+					} else {
+						node.AddRecursiveChildNode(calleeNode, position.Line)
 					}
 				} else {
 

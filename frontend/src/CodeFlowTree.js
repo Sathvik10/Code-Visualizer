@@ -36,7 +36,6 @@ const CodeFlowTree = ({ data, onNodeClick }) => {
 
   useEffect(() => {
     if (!data || !dimensions.width || !dimensions.height) return;
-    console.log(data);
 
     const width = dimensions.width;
     const dx = 80; // Increased vertical spacing between nodes
