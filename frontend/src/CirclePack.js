@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
+import { setColorScale, getColorScale } from "./ColorScale"
 
 const CirclePackingChart = ({ data, title }) => {
   const chartRef = useRef();
@@ -32,6 +33,8 @@ const CirclePackingChart = ({ data, title }) => {
     const container = chartRef.current;
     if (!container || !data || data.length === 0) return;
 
+    setColorScale(data);
+
     // Only initialize the chart once
     if (chartInitialized) return;
     setChartInitialized(true);
@@ -52,8 +55,7 @@ const CirclePackingChart = ({ data, title }) => {
       // Create a group for all elements (for zoom handling)
       const g = svg.append("g");
 
-      // Color scale
-      const color = d3.scaleOrdinal(d3.schemeTableau10);
+      const color = getColorScale(); 
       
       // Size scale for circles
       const maxValue = d3.max(data, d => d.count);
