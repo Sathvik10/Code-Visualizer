@@ -511,16 +511,26 @@ const Dashboard = () => {
 				>
 					{/* always-visible toggle handle */}
 					<div
-						className={`flex items-center mb-2 /${
+						className={`flex items-center mb-2 mt-2 /${
 							isSidebarOpen ? "justify-end" : "justify-center"
 						}`}
 					>
 						<button
 							onClick={() => setIsSidebarOpen((open) => !open)}
-							className="p-1 rounded bg-gray-200 hover:bg-gray-300"
+							className="px-3 py-1 mt-1 font-bold rounded bg-gray-200 hover:bg-gray-300"
 						>
-							{isSidebarOpen ? "«" : "»"}
+							{isSidebarOpen ? "<" : ">"}
 						</button>
+						<h3 className="font-semibold ml-2">
+							Project :{" "}
+							{(() => {
+								const name =
+									localStorage.getItem("projectName") || "";
+								return name.endsWith("-")
+									? name.slice(0, -1)
+									: name;
+							})()}
+						</h3>
 					</div>
 
 					{/* only show searchtree when open */}

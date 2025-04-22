@@ -1,5 +1,6 @@
 import React from "react";
-import ErrorMessage from "./ErrorMessage"; // Import the ErrorMessage component
+import ErrorMessage from "./ErrorMessage";
+import { Link } from "react-router-dom";
 
 const Navbar = ({
 	repoURL,
@@ -17,9 +18,12 @@ const Navbar = ({
 	return (
 		<div className="w-full flex items-center justify-between">
 			{/* Left side - Name */}
-			<div className="text-4xl font-bold whitespace-nowrap">
+			<Link
+				to="/"
+				className="text-4xl font-bold whitespace-nowrap hover:opacity-80 transition"
+			>
 				Code Visualizer
-			</div>
+			</Link>
 
 			<div className="mr-16">
 				<form
