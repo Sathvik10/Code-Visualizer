@@ -10,7 +10,7 @@ import LintIssuesByLinter from "./LintIssueTracker";
 import LintingCodeViewer from "./LintingCodeViewer";
 import FunctionTable from "./FunctionTable";
 import CoverageDashboardPanel from "./CoverageDashboardPanel";
-import {Modal, ChartContainer } from "./Modal"
+import { Modal, ChartContainer } from "./Modal";
 
 const FunctionDescriptionPanel = ({
 	fileContent1,
@@ -91,37 +91,36 @@ const Dashboard = () => {
 	// toggle handler
 	const toggleLinting = () => setLintingEnabled((enabled) => !enabled);
 
-  // ─── Sidebar collapse & search state ─────────────────────────
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [sidebarSearch, setSidebarSearch] = useState("");
-  const [viewMode, setViewMode] = useState("stats"); // "stats" | "explorer" | "coverage"
+	// ─── Sidebar collapse & search state ─────────────────────────
+	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+	const [sidebarSearch, setSidebarSearch] = useState("");
+	const [viewMode, setViewMode] = useState("stats"); // "stats" | "explorer" | "coverage"
 
 	// near the top of your Dashboard() before any useEffects:
 	const isFileSelected = filepath && filepath.endsWith(".go");
 
-  // Add state for modals
-  const [modalState, setModalState] = useState({
-    isOpen: false,
-    title: "",
-    content: null
-  });
+	// Add state for modals
+	const [modalState, setModalState] = useState({
+		isOpen: false,
+		title: "",
+		content: null,
+	});
 
-  const openModal = (title, content) => {
-    setModalState({
-      isOpen: true,
-      title,
-      content
-    });
-  };
+	const openModal = (title, content) => {
+		setModalState({
+			isOpen: true,
+			title,
+			content,
+		});
+	};
 
-  const closeModal = () => {
-    setModalState({
-      isOpen: false,
-      title: "",
-      content: null
-    });
-  };
-
+	const closeModal = () => {
+		setModalState({
+			isOpen: false,
+			title: "",
+			content: null,
+		});
+	};
 
 	// Recursively filter the tree by name
 	const filterTree = (node, query) => {
@@ -440,7 +439,7 @@ const Dashboard = () => {
 
 	return (
 		<>
-			<div className="fixed top-0 left-0 w-full bg-white z-50 shadow h-16 flex items-center px-6">
+			<div className="fixed top-0 left-0 w-full bg-white z-50 shadow h-20 flex items-center px-6">
 				<Navbar
 					repoURL={repoURL}
 					setRepoURL={setRepoURL}
@@ -454,35 +453,41 @@ const Dashboard = () => {
 					errorMessage={errorMessage}
 					setErrorMessage={setErrorMessage}
 				/>
-				 {/* View Mode Toggle */}
-				<div className="flex items-center px-6 py-3">
-					<span className="text-gray-700 mr-3 select-none">View Mode:</span>
-					<div className="flex space-x-2">
-						<button
-							onClick={() => setViewMode("stats")}
-							className={`px-3 py-1 rounded text-sm ${
-								viewMode === "stats" ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
-							}`}
-						>
-							Stats
-						</button>
-						<button
-							onClick={() => setViewMode("explorer")}
-							className={`px-3 py-1 rounded text-sm ${
-								viewMode === "explorer" ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
-							}`}
-						>
-							Explorer
-						</button>
-						<button
-							onClick={() => setViewMode("coverage")}
-							className={`px-3 py-1 rounded text-sm ${
-								viewMode === "coverage" ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
-							}`}
-						>
-							Coverage
-						</button>
-					</div>
+				{/* View Mode Toggle */}
+				<div className="flex items-center gap-2">
+					<span className="font-semibold text-gray-700 select-none text-base  whitespace-nowrap">
+						View Mode :
+					</span>
+					<button
+						onClick={() => setViewMode("stats")}
+						className={`px-3.5 py-1.5 rounded text-sm ${
+							viewMode === "stats"
+								? "bg-blue-500 text-white"
+								: "bg-gray-200 hover:bg-gray-300"
+						}`}
+					>
+						Stats
+					</button>
+					<button
+						onClick={() => setViewMode("explorer")}
+						className={`px-3.5 py-1.5 rounded text-sm ${
+							viewMode === "explorer"
+								? "bg-blue-500 text-white"
+								: "bg-gray-200 hover:bg-gray-300"
+						}`}
+					>
+						Explorer
+					</button>
+					<button
+						onClick={() => setViewMode("coverage")}
+						className={`px-3.5 py-1.5 rounded text-sm ${
+							viewMode === "coverage"
+								? "bg-blue-500 text-white"
+								: "bg-gray-200 hover:bg-gray-300"
+						}`}
+					>
+						Coverage
+					</button>
 				</div>
 			</div>
 
@@ -538,45 +543,62 @@ const Dashboard = () => {
 					)}
 				</div>
 
-        {/* Scrollable Content Area */}
-        {viewMode === "coverage" ? (
-          <div className="flex-1 p-4 h-full overflow-auto">
-            <CoverageDashboardPanel projectName={projectName} />
-          </div>
-        ) : (
-        <div className="flex-1 flex flex-col h-full min-h-0 overflow-y-auto transition-all duration-300">
-          <div className="flex gap-4 p-4 h-full">
-            
-            {/* Column 1 */}
-            <div className="w-1/3 flex flex-col gap-4 h-full">
-              {
-                viewMode === "stats" ? 
-                (<>
-                  <ChartContainer 
-                      title="File-Level Contributions" 
-                      onExpand={() => openModal("File-Level Contributions", <PieChart data={fileChartData} />)}
-                    >
-                      <PieChart data={fileChartData} />
-                    </ChartContainer>
-                    
-                    <ChartContainer 
-                      title="Overall Contributions" 
-                      onExpand={() => openModal("Overall Contributions", <CircularPacking data={chartData} />)}
-                    >
-                      <CircularPacking data={chartData} />
-                  </ChartContainer>
-                </>) :
-                (
-                  <div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-                    <FunctionTable 
-                      functions={filepath.endsWith(".go") ? functions : []}
-                      onFunctionClick={handleFunctionClick}
-                      selectedFunction={selectedFunction}
-                    />
-                  </div>
-                )
-              }
-            </div>
+				{/* Scrollable Content Area */}
+				{viewMode === "coverage" ? (
+					<div className="flex-1 p-4 h-full overflow-auto">
+						<CoverageDashboardPanel projectName={projectName} />
+					</div>
+				) : (
+					<div className="flex-1 flex flex-col h-full min-h-0 overflow-y-auto transition-all duration-300">
+						<div className="flex gap-4 p-4 h-full">
+							{/* Column 1 */}
+							<div className="w-1/3 flex flex-col gap-4 h-full">
+								{viewMode === "stats" ? (
+									<>
+										<ChartContainer
+											title="File-Level Contributions"
+											onExpand={() =>
+												openModal(
+													"File-Level Contributions",
+													<PieChart
+														data={fileChartData}
+													/>
+												)
+											}
+										>
+											<PieChart data={fileChartData} />
+										</ChartContainer>
+
+										<ChartContainer
+											title="Overall Contributions"
+											onExpand={() =>
+												openModal(
+													"Overall Contributions",
+													<CircularPacking
+														data={chartData}
+													/>
+												)
+											}
+										>
+											<CircularPacking data={chartData} />
+										</ChartContainer>
+									</>
+								) : (
+									<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
+										<FunctionTable
+											functions={
+												filepath.endsWith(".go")
+													? functions
+													: []
+											}
+											onFunctionClick={
+												handleFunctionClick
+											}
+											selectedFunction={selectedFunction}
+										/>
+									</div>
+								)}
+							</div>
 
 							{/* Column 2 */}
 							<div className="w-1/3 flex flex-col gap-4 h-full">
@@ -605,31 +627,53 @@ const Dashboard = () => {
 									</div>
 								) : (
 									<>
-										<ChartContainer 
-                      title={`Lint issues in ${getRelativePath(filepath) || "Repo"}`}
-                      onExpand={() => openModal(
-                        `Lint issues in ${getRelativePath(filepath) || "Repo"}`,
-                        <LintIssuesByLinter 
-                          data={lintIssues} 
-                          filterPath={getRelativePath(filepath)} 
-                          useBarChart={false} 
-                        />
-                      )}>
-                      <LintIssuesByLinter 
-                        data={lintIssues} 
-                        filterPath={getRelativePath(filepath)} 
-                        useBarChart={false} 
-                      />
-                    </ChartContainer>
-                    
-                    <ChartContainer 
-                      title="Lint Issues by Linter"
-                      onExpand={() => openModal(
-                        "Lint Issues by Linter",
-                        <LintIssuesByLinter data={lintIssues} useBarChart={true} />
-                      )}>
-                      <LintIssuesByLinter data={lintIssues} />
-                    </ChartContainer>
+										<ChartContainer
+											title={`Lint issues in ${
+												getRelativePath(filepath) ||
+												"Repo"
+											}`}
+											onExpand={() =>
+												openModal(
+													`Lint issues in ${
+														getRelativePath(
+															filepath
+														) || "Repo"
+													}`,
+													<LintIssuesByLinter
+														data={lintIssues}
+														filterPath={getRelativePath(
+															filepath
+														)}
+														useBarChart={false}
+													/>
+												)
+											}
+										>
+											<LintIssuesByLinter
+												data={lintIssues}
+												filterPath={getRelativePath(
+													filepath
+												)}
+												useBarChart={false}
+											/>
+										</ChartContainer>
+
+										<ChartContainer
+											title="Lint Issues by Linter"
+											onExpand={() =>
+												openModal(
+													"Lint Issues by Linter",
+													<LintIssuesByLinter
+														data={lintIssues}
+														useBarChart={true}
+													/>
+												)
+											}
+										>
+											<LintIssuesByLinter
+												data={lintIssues}
+											/>
+										</ChartContainer>
 									</>
 								)}
 							</div>
@@ -696,18 +740,16 @@ const Dashboard = () => {
 							</div>
 						</div>
 					</div>
-        )}
+				)}
 			</div>
 
-      <Modal 
-        isOpen={modalState.isOpen} 
-        onClose={closeModal} 
-        title={modalState.title}
-      >
-        <div className="w-full h-full">
-          {modalState.content}
-        </div>
-      </Modal>
+			<Modal
+				isOpen={modalState.isOpen}
+				onClose={closeModal}
+				title={modalState.title}
+			>
+				<div className="w-full h-full">{modalState.content}</div>
+			</Modal>
 		</>
 	);
 };
