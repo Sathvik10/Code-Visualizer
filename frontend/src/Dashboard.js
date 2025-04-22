@@ -517,10 +517,19 @@ const Dashboard = () => {
 					>
 						<button
 							onClick={() => setIsSidebarOpen((open) => !open)}
-							className="px-3 py-1 mt-1 font-bold rounded bg-gray-200 hover:bg-gray-300"
+							className={`px-3 py-1 mt-1 font-bold rounded ${
+								isSidebarOpen
+									? "hover:bg-gray-300"
+									: "hover:bg-blue-600"
+							}  ${
+								isSidebarOpen
+									? "bg-gray-200"
+									: "bg-blue-500 text-white"
+							}`}
 						>
 							{isSidebarOpen ? "<" : ">"}
 						</button>
+
 						<h3 className="font-semibold ml-2">
 							Project :{" "}
 							{(() => {
