@@ -13,7 +13,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-var ignoreList = []string{"fmt", "error", "make", "map", "len", "append", "Error", "strings", "slices", "log"}
+var ignoreList = []string{"fmt", "error", "make", "map", "len", "append", "Error", "strings", "slices", "log", "errors", "string"}
 
 // FunctionNode represents a node in our call tree
 type FunctionNode struct {
@@ -48,120 +48,6 @@ func (fn *FunctionNode) AddChild(child *FunctionNode) {
 		}
 	}
 	fn.Children = append(fn.Children, child)
-}
-
-// PrintTree prints the function call tree with proper indentation
-func (fn *FunctionNode) PrintTree(indent int) {
-	indentStr := strings.Repeat("  ", indent)
-	fileInfo := filepath.Base(fn.File)
-	if fn.IsExternal {
-		fmt.Printf("%s- %s.%s [external] (%s:%d)\n", indentStr, fn.Package, fn.Name, fileInfo, fn.Line)
-	} else {
-		fmt.Printf("%s- %s.%s (%s:%d)\n", indentStr, fn.Package, fn.Name, fileInfo, fn.Line)
-	}
-	for _, child := range fn.Children {
-		child.PrintTree(indent + 1)
-	}
-}
-
-// ExportDOT exports the function call tree as a DOT graph for visualization
-func (fn *FunctionNode) ExportDOT(filename string) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Write the DOT file header
-	fmt.Fprintf(file, "digraph FunctionCallTree {\n")
-	fmt.Fprintf(file, "  rankdir=LR;\n") // Left to right layout
-	fmt.Fprintf(file, "  node [shape=box, style=filled];\n")
-
-	// Use a map to track nodes we've already written to avoid duplicates
-	nodeMap := make(map[string]int)
-	nextID := 1
-
-	var writeDOT func(node *FunctionNode)
-
-	writeDOT = func(node *FunctionNode) {
-		fullName := node.Package + "." + node.Name
-
-		// Check if we've already created this node
-		myID, exists := nodeMap[fullName]
-		if !exists {
-			myID = nextID
-			nodeMap[fullName] = myID
-			nextID++
-
-			// Write this node
-			nodeName := strings.Replace(node.Name, "\"", "\\\"", -1)
-			pkgName := strings.Replace(node.Package, "\"", "\\\"", -1)
-			fileBase := filepath.Base(node.File)
-
-			// Color nodes by package and type
-			fillColor := "lightblue" // Default for local package functions
-			if node.IsExternal {
-				fillColor = "lightgrey" // External functions
-			} else if node.Package != fn.Package {
-				fillColor = "lightgreen" // Functions from other packages in our module
-			}
-
-			// Add method/function indication
-			nodeType := "function"
-			if strings.Contains(node.Name, ".") {
-				nodeType = "method"
-			}
-
-			fmt.Fprintf(file, "  node%d [label=\"%s.%s\\n%s\\n%s:%d\", fillcolor=\"%s\"];\n",
-				myID, pkgName, nodeName, nodeType, fileBase, node.Line, fillColor)
-		}
-
-		// Process children
-		for _, child := range node.Children {
-			childFullName := child.Package + "." + child.Name
-			childID, childExists := nodeMap[childFullName]
-
-			if !childExists {
-				childID = nextID
-				nodeMap[childFullName] = childID
-				nextID++
-
-				// Write child node
-				childName := strings.Replace(child.Name, "\"", "\\\"", -1)
-				childPkg := strings.Replace(child.Package, "\"", "\\\"", -1)
-				childFile := filepath.Base(child.File)
-
-				// Color nodes by package and type
-				fillColor := "lightblue" // Default for local package functions
-				if child.IsExternal {
-					fillColor = "lightgrey" // External functions
-				} else if child.Package != fn.Package {
-					fillColor = "lightgreen" // Functions from other packages in our module
-				}
-
-				// Add method/function indication
-				nodeType := "function"
-				if strings.Contains(child.Name, ".") {
-					nodeType = "method"
-				}
-
-				fmt.Fprintf(file, "  node%d [label=\"%s.%s\\n%s\\n%s:%d\", fillcolor=\"%s\"];\n",
-					childID, childPkg, childName, nodeType, childFile, child.Line, fillColor)
-			}
-
-			// Write edge
-			fmt.Fprintf(file, "  node%d -> node%d;\n", myID, childID)
-
-			// Recursively process children
-			writeDOT(child)
-		}
-	}
-
-	writeDOT(fn)
-
-	// Close the DOT file
-	fmt.Fprintf(file, "}\n")
-	return nil
 }
 
 // CallGraphAnalyzer analyzes Go code to build function call graphs

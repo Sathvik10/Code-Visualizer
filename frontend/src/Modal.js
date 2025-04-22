@@ -5,8 +5,8 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl h-auto max-h-[80vh] overflow-hidden">
+    <div className="fixed inset-0  bg-grey bg-opacity-50 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-auto max-h-[90vh] overflow-hidden">
         <div className="p-6 flex flex-col h-full">
           <div className="flex justify-between items-center border-b pb-3 mb-4">
             <h2 className="text-2xl font-bold">{title}</h2>
@@ -19,7 +19,7 @@ export const Modal = ({ isOpen, onClose, title, children }) => {
           </div>
           
           <div className="flex-1 overflow-auto">
-            <div className="h-96 w-full">
+            <div className="h-120 w-full">
               {children}
             </div>
           </div>

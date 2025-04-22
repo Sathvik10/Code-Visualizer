@@ -12,6 +12,9 @@ import FunctionTable from "./FunctionTable";
 import CoverageDashboardPanel from "./CoverageDashboardPanel";
 import { Modal, ChartContainer } from "./Modal";
 
+
+
+
 const FunctionDescriptionPanel = ({
 	fileContent1,
 	lintIssues,
@@ -104,13 +107,15 @@ const Dashboard = () => {
 		isOpen: false,
 		title: "",
 		content: null,
+		type: ""
 	});
 
-	const openModal = (title, content) => {
+	const openModal = (title, content, type) => {
 		setModalState({
 			isOpen: true,
 			title,
 			content,
+			type,
 		});
 	};
 
@@ -121,6 +126,53 @@ const Dashboard = () => {
 			content: null,
 		});
 	};
+
+	const GetCodeFlowTree = () => {
+		return codeFlowTree === null ? (
+			<div className="flex items-center justify-center h-full">
+				<p className="text-gray-500">
+					Select a function to
+					view its flow
+				</p>
+			</div>
+		) : (
+			<div className="flex gap-4 h-full">
+				{/* Left column: 35% */}
+				<div
+					className="
+					w-[35%]
+					bg-white rounded-2xl p-4
+					border border-gray-200
+					overflow-auto
+					"
+				>
+					<h2 className="text-lg font-semibold mb-2">Code Flow</h2>
+					<CodeFlowTree
+					data={codeFlowTree}
+					onNodeClick={handleCodeFlowNodeClicked}
+					/>
+				</div>
+
+				{/* Right column: 65% */}
+				<div
+					className="
+					w-[65%]
+					bg-white rounded-2xl p-4
+					border border-gray-200
+					overflow-auto
+					"
+				>
+					<h2 className="text-lg font-semibold mb-2">Code Viewer</h2>
+					<LintingCodeViewer
+					fileContent={fileContent1}
+					lintErrors={getLintErrorsForFile(lintIssues, filepath)}
+					focusLine={focusedLine}
+					/>
+				</div>
+			</div>
+
+		)
+	}
 
 	// Recursively filter the tree by name
 	const filterTree = (node, query) => {
@@ -582,6 +634,8 @@ const Dashboard = () => {
 													<PieChart
 														data={fileChartData}
 													/>
+													,
+													"pie"
 												)
 											}
 										>
@@ -595,7 +649,8 @@ const Dashboard = () => {
 													"Overall Contributions",
 													<CircularPacking
 														data={chartData}
-													/>
+													/>,
+													"circ"
 												)
 											}
 										>
@@ -622,28 +677,32 @@ const Dashboard = () => {
 							{/* Column 2 */}
 							<div className="w-1/3 flex flex-col gap-4 h-full">
 								{viewMode !== "stats" ? (
-									<div className="bg-white rounded-2xl p-4 border border-gray-200 flex-1">
-										<h2 className="text-lg font-semibold">
-											Function Tree Flow
-										</h2>
-										<div className="w-full h-full overflow-hidden">
-											{codeFlowTree === null ? (
-												<div className="flex items-center justify-center h-full">
-													<p className="text-gray-500">
-														Select a function to
-														view its flow
-													</p>
-												</div>
-											) : (
-												<CodeFlowTree
-													data={codeFlowTree}
-													onNodeClick={
-														handleCodeFlowNodeClicked
-													}
-												/>
-											)}
-										</div>
-									</div>
+									<>
+										<ChartContainer title={"Function Tree Flow"}
+											onExpand={()=> openModal(
+												"Function Tree Flow",
+												GetCodeFlowTree(),
+												"codeflow"
+											)}>
+												{codeFlowTree === null ? (
+													<div className="flex items-center justify-center h-full">
+														<p className="text-gray-500">
+															Select a function to
+															view its flow
+														</p>
+													</div>
+												) : (
+													<CodeFlowTree
+														data={codeFlowTree}
+														onNodeClick={
+															handleCodeFlowNodeClicked
+														}
+													/>
+												)}
+										</ChartContainer>
+									</>
+
+		
 								) : (
 									<>
 										<ChartContainer
@@ -664,7 +723,8 @@ const Dashboard = () => {
 															filepath
 														)}
 														useBarChart={false}
-													/>
+													/>,
+													"lint"
 												)
 											}
 										>
@@ -685,7 +745,8 @@ const Dashboard = () => {
 													<LintIssuesByLinter
 														data={lintIssues}
 														useBarChart={true}
-													/>
+													/>,
+													"lint"
 												)
 											}
 										>
@@ -767,7 +828,16 @@ const Dashboard = () => {
 				onClose={closeModal}
 				title={modalState.title}
 			>
-				<div className="w-full h-full">{modalState.content}</div>
+				<div className="w-full h-full">
+					{modalState.type === "pie" ?  (
+						<PieChart data={fileChartData}
+					/>
+					)
+					: modalState.type === "circ" ? <CircularPacking data={chartData}/> 
+					: modalState.type === "lint" ? modalState.content 
+					: modalState.type === "codeflow" ? GetCodeFlowTree()
+					: modalState.content}
+				</div>
 			</Modal>
 		</>
 	);
