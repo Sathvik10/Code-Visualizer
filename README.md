@@ -1,5 +1,8 @@
 # Code Visualizer
 
+### Demo Video
+[Code Visualizer Demo on YouTube](https://www.youtube.com/watch?v=ZAi8cu7kwiQ)
+
 ## Requirement: Golang and Node
 
 Before starting this project, ensure that you have the Go linter installed.
