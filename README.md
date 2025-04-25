@@ -18,3 +18,10 @@ After installation, run the provided bash script from your home directory:
 
 ```bash
 bash run.sh
+```
+
+
+If you're running this for the first time:
+
+  Make sure `go` is in your PATH.
+  This project uses Go modules. If prompted, enable Go modules by running `go mod tidy`.
